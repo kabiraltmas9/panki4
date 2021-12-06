@@ -6,6 +6,7 @@
 #include "std_srvs/srv/empty.hpp"
 #include "crazyswarm2_interfaces/srv/takeoff.hpp"
 #include "crazyswarm2_interfaces/srv/land.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 
 using std::placeholders::_1;
 
@@ -36,6 +37,8 @@ public:
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
 
+        publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+
         client_emergency_ = this->create_client<Empty>("emergency");
         client_emergency_->wait_for_service();
 
@@ -47,6 +50,15 @@ public:
     }
 
 private:
+    void execute() 
+    {
+        geometry_msgs::msg::Twist twist;
+        twist.angular.z = 1.2;
+        twist.linear.x = 2.2;
+        publisher_->publish(twist);    
+
+    }
+
     void joyChanged(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
         static std::vector<int> lastButtonState(Xbox360Buttons::COUNT);
@@ -99,6 +111,7 @@ private:
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client_emergency_;
     rclcpp::Client<Takeoff>::SharedPtr client_takeoff_;
     rclcpp::Client<Land>::SharedPtr client_land_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
 };
 
 int main(int argc, char *argv[])
