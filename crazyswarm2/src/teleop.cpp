@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
@@ -8,11 +9,15 @@
 #include "crazyswarm2_interfaces/srv/land.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
+
 using std::placeholders::_1;
 
 using std_srvs::srv::Empty;
 using crazyswarm2_interfaces::srv::Takeoff;
 using crazyswarm2_interfaces::srv::Land;
+
+using namespace std::chrono_literals;
+
 
 namespace Xbox360Buttons {
 
@@ -38,18 +43,22 @@ public:
             "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+        timer_ = this->create_wall_timer(
+        2s, std::bind(&TeleopNode::execute, this));
+    
 
-        client_emergency_ = this->create_client<Empty>("emergency");
-        client_emergency_->wait_for_service();
+        // client_emergency_ = this->create_client<Empty>("emergency");
+        // client_emergency_->wait_for_service();
 
-        client_takeoff_ = this->create_client<Takeoff>("takeoff");
-        client_takeoff_->wait_for_service();
+        // client_takeoff_ = this->create_client<Takeoff>("takeoff");
+        // client_takeoff_->wait_for_service();
 
-        client_land_ = this->create_client<Land>("land");
-        client_land_->wait_for_service();
+        // client_land_ = this->create_client<Land>("land");
+        // client_land_->wait_for_service();
     }
 
 private:
+    
     void execute() 
     {
         geometry_msgs::msg::Twist twist;
@@ -112,6 +121,8 @@ private:
     rclcpp::Client<Takeoff>::SharedPtr client_takeoff_;
     rclcpp::Client<Land>::SharedPtr client_land_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    
 };
 
 int main(int argc, char *argv[])
