@@ -43,7 +43,13 @@ public:
             "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-        timer_ = this->create_wall_timer(2s, std::bind(&TeleopNode::execute, this));
+        
+        this->declare_parameter<int>("frequency", 5);
+        frequency_ = this->get_parameter("frequency").as_int();
+
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(frequency_),
+            std::bind(&TeleopNode::execute, this));
     
 
         // client_emergency_ = this->create_client<Empty>("emergency");
@@ -54,19 +60,14 @@ public:
 
         // client_land_ = this->create_client<Land>("land");
         // client_land_->wait_for_service();
-        this->declare_parameter<double>("frequency", 10.0);
-        frequency_ = this->get_parameter("frequency").as_double();
+        
     }
 
 private:
-    
+
     void execute() 
     {
-        rclcpp::Rate rate(frequency_);
-        while (rclcpp::ok()){
-            publisher_->publish(twist);
-            rate.sleep();
-        }
+        publisher_->publish(twist);
             
     }
 
@@ -125,7 +126,7 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     geometry_msgs::msg::Twist twist;
-    double frequency_;
+    int frequency_;
     
 };
 
