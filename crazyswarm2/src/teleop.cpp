@@ -44,11 +44,11 @@ public:
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
-        this->declare_parameter<int>("frequency", 5);
+        this->declare_parameter<int>("frequency", 100);
         frequency_ = this->get_parameter("frequency").as_int();
 
         timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(frequency_),
+            std::chrono::seconds(1/frequency_),
             std::bind(&TeleopNode::execute, this));
     
 
