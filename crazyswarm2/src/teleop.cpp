@@ -39,18 +39,28 @@ public:
     TeleopNode()
         : Node("teleop")
     {
+        
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
+            "joy", 1, std::bind(&TeleopNode::joyChangedAxis, this, _1));
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
         this->declare_parameter<int>("frequency", 100);
         frequency_ = this->get_parameter("frequency").as_int();
+        this->declare_parameter<int>("axes_x", 4);
+        axes_.x = this->get_parameter("axes_x").as_int();
+        this->declare_parameter<int>("axes_y", 3);
+        axes_.y = this->get_parameter("axes_y").as_int();
+        this->declare_parameter<int>("axes_z", 2);
+        axes_.z = this->get_parameter("axes_z").as_int();
+        this->declare_parameter<int>("axes_yaw", 1);
+        axes_.yaw = this->get_parameter("axes_yaw").as_int();
 
         timer_ = this->create_wall_timer(
             std::chrono::seconds(1/frequency_),
-            std::bind(&TeleopNode::execute, this));
-    
+            std::bind(&TeleopNode::publish, this));
+
+       
 
         // client_emergency_ = this->create_client<Empty>("emergency");
         // client_emergency_->wait_for_service();
@@ -64,11 +74,44 @@ public:
     }
 
 private:
-
-    void execute() 
+    struct
     {
-        publisher_->publish(twist);
+        int x;
+        int y;
+        int z;
+        int yaw;
+    } axes_;
+
+    void publish() 
+    {
+        publisher_->publish(twist_);
             
+    }
+
+    void joyChangedAxis(const sensor_msgs::msg::Joy::SharedPtr msg)
+    {
+
+        twist_.linear.x = getAxis(msg, axes_.x);
+        twist_.linear.y = getAxis(msg, axes_.y);
+        twist_.linear.z = getAxis(msg, axes_.z);
+        twist_.angular.z = getAxis(msg, axes_.yaw);
+    }
+
+    sensor_msgs::msg::Joy::_axes_type::value_type getAxis(const sensor_msgs::msg::Joy::SharedPtr &msg, int axis)
+    {
+        if (axis == 0) {
+            return 0;
+        }
+
+        sensor_msgs::msg::Joy::_axes_type::value_type sign = 1.0;
+        if (axis < 0) {
+            sign = -1.0;
+            axis = -axis;
+        }
+        if ((size_t) axis > msg->axes.size()) {
+            return 0;
+        }
+        return sign * msg->axes[axis - 1]*2;
     }
 
     void joyChanged(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -125,7 +168,7 @@ private:
     rclcpp::Client<Land>::SharedPtr client_land_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
-    geometry_msgs::msg::Twist twist;
+    geometry_msgs::msg::Twist twist_;
     int frequency_;
     
 };
