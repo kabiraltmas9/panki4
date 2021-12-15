@@ -41,7 +41,7 @@ public:
     {
         
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 1, std::bind(&TeleopNode::joyChangedAxis, this, _1));
+            "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
@@ -88,7 +88,7 @@ private:
             
     }
 
-    void joyChangedAxis(const sensor_msgs::msg::Joy::SharedPtr msg)
+    void joyChanged(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
 
         twist_.linear.x = getAxis(msg, axes_.x);
@@ -114,25 +114,7 @@ private:
         return sign * msg->axes[axis - 1]*2;
     }
 
-    void joyChanged(const sensor_msgs::msg::Joy::SharedPtr msg)
-    {
-        static std::vector<int> lastButtonState(Xbox360Buttons::COUNT);
-
-        if (msg->buttons.size() >= Xbox360Buttons::COUNT && lastButtonState.size() >= Xbox360Buttons::COUNT) {
-            if (msg->buttons[Xbox360Buttons::Red] == 1 && lastButtonState[Xbox360Buttons::Red] == 0) {
-                emergency();
-            }
-            if (msg->buttons[Xbox360Buttons::Start] == 1 && lastButtonState[Xbox360Buttons::Start] == 0) {
-                takeoff();
-            }
-            if (msg->buttons[Xbox360Buttons::Back] == 1 && lastButtonState[Xbox360Buttons::Back] == 0) {
-                land();
-            }
-        }
-
-        lastButtonState = msg->buttons;
-    }
-
+    
     void emergency()
     {
         RCLCPP_INFO(this->get_logger(), "emergency requested...");
