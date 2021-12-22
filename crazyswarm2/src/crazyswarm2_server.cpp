@@ -9,6 +9,7 @@
 #include "crazyswarm2_interfaces/srv/takeoff.hpp"
 #include "crazyswarm2_interfaces/srv/land.hpp"
 #include "crazyswarm2_interfaces/srv/go_to.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -87,6 +88,9 @@ public:
     service_takeoff_ = node->create_service<Takeoff>(name + "/takeoff", std::bind(&CrazyflieROS::takeoff, this, _1, _2));
     service_land_ = node->create_service<Land>(name + "/land", std::bind(&CrazyflieROS::land, this, _1, _2));
     service_go_to_ = node->create_service<GoTo>(name + "/go_to", std::bind(&CrazyflieROS::go_to, this, _1, _2));
+    
+    subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(
+            "cmd_vel", 10, std::bind(&CrazyflieROS::cmd_vel_changed, this, _1)); 
 
     auto start = std::chrono::system_clock::now();
 
@@ -147,6 +151,16 @@ public:
   // CrazyflieROS(CrazyflieROS &&) = default;
 
 private:
+  void cmd_vel_changed(const geometry_msgs::msg::Twist::SharedPtr msg)
+  {
+    float roll = msg->linear.y;
+    float pitch = - (msg->linear.x);
+    float yawrate = msg->angular.z;
+    uint16_t thrust = std::min<uint16_t>(std::max<float>(msg->linear.z, 0.0), 60000);
+
+    cf_.sendSetpoint(roll, pitch, yawrate, thrust);
+  }
+
   void on_console(const char *msg)
   {
     message_buffer_ += msg;
@@ -286,6 +300,8 @@ private:
   std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> cb_handle_;
   // std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> cb_handles_;
+
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr subscription_cmd_vel_;
 };
 
 class CrazyflieServer : public rclcpp::Node

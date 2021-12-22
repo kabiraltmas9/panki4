@@ -45,7 +45,7 @@ public:
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
-        this->declare_parameter<int>("frequency", 100);
+        this->declare_parameter<int>("frequency", 1);
         frequency_ = this->get_parameter("frequency").as_int();
         this->declare_parameter<int>("axes_x", 4);
         axes_.x = this->get_parameter("axes_x").as_int();
@@ -91,6 +91,22 @@ private:
     void joyChanged(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
 
+        static std::vector<int> lastButtonState(Xbox360Buttons::COUNT);
+
+        if (msg->buttons.size() >= Xbox360Buttons::COUNT && lastButtonState.size() >= Xbox360Buttons::COUNT) {
+            if (msg->buttons[Xbox360Buttons::Red] == 1 && lastButtonState[Xbox360Buttons::Red] == 0) {
+                emergency();
+            }
+            if (msg->buttons[Xbox360Buttons::Start] == 1 && lastButtonState[Xbox360Buttons::Start] == 0) {
+                takeoff();
+            }
+            if (msg->buttons[Xbox360Buttons::Back] == 1 && lastButtonState[Xbox360Buttons::Back] == 0) {
+                land();
+            }
+        }
+
+        lastButtonState = msg->buttons;
+        
         twist_.linear.x = getAxis(msg, axes_.x);
         twist_.linear.y = getAxis(msg, axes_.y);
         twist_.linear.z = getAxis(msg, axes_.z);
