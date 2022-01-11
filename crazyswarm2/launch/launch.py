@@ -64,10 +64,11 @@ def generate_launch_description():
             package='crazyswarm2',
             executable='teleop',
             name='teleop',
-            # remappings=[
-            #     ('takeoff', 'cf1/takeoff'),
-            #     ('land', 'cf1/land'),
-            # ]
+            remappings=[
+                ('takeoff', 'cf1/takeoff'),
+                ('land', 'cf1/land'),
+                ('cmd_vel', 'cf1/cmd_vel')
+            ]
         ),
         Node(
             package='joy',

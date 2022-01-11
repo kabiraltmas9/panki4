@@ -88,10 +88,8 @@ public:
     service_takeoff_ = node->create_service<Takeoff>(name + "/takeoff", std::bind(&CrazyflieROS::takeoff, this, _1, _2));
     service_land_ = node->create_service<Land>(name + "/land", std::bind(&CrazyflieROS::land, this, _1, _2));
     service_go_to_ = node->create_service<GoTo>(name + "/go_to", std::bind(&CrazyflieROS::go_to, this, _1, _2));
-    
-    subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(
-            "cmd_vel", 10, std::bind(&CrazyflieROS::cmd_vel_changed, this, _1)); 
 
+    subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(name + "/cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_vel_changed, this, _1)); 
     auto start = std::chrono::system_clock::now();
 
     cf_.logReset();
@@ -151,8 +149,10 @@ public:
   // CrazyflieROS(CrazyflieROS &&) = default;
 
 private:
+
   void cmd_vel_changed(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
+    RCLCPP_INFO(logger_, "Callback function is called...");
     float roll = msg->linear.y;
     float pitch = - (msg->linear.x);
     float yawrate = msg->angular.z;
@@ -382,6 +382,7 @@ int main(int argc, char *argv[])
   {
     node->spin_some();
     rclcpp::spin_some(node);
+    
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   rclcpp::shutdown();

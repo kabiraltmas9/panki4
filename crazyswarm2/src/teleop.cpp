@@ -62,14 +62,14 @@ public:
 
        
 
-        // client_emergency_ = this->create_client<Empty>("emergency");
-        // client_emergency_->wait_for_service();
+        client_emergency_ = this->create_client<Empty>("emergency");
+        client_emergency_->wait_for_service();
 
-        // client_takeoff_ = this->create_client<Takeoff>("takeoff");
-        // client_takeoff_->wait_for_service();
+        client_takeoff_ = this->create_client<Takeoff>("takeoff");
+        client_takeoff_->wait_for_service();
 
-        // client_land_ = this->create_client<Land>("land");
-        // client_land_->wait_for_service();
+        client_land_ = this->create_client<Land>("land");
+        client_land_->wait_for_service();
         
     }
 
