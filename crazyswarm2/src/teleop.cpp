@@ -47,14 +47,28 @@ public:
         
         this->declare_parameter<int>("frequency", 1);
         frequency_ = this->get_parameter("frequency").as_int();
-        this->declare_parameter<int>("axes_x", 4);
-        axes_.x = this->get_parameter("axes_x").as_int();
-        this->declare_parameter<int>("axes_y", 3);
-        axes_.y = this->get_parameter("axes_y").as_int();
-        this->declare_parameter<int>("axes_z", 2);
-        axes_.z = this->get_parameter("axes_z").as_int();
-        this->declare_parameter<int>("axes_yaw", 1);
-        axes_.yaw = this->get_parameter("axes_yaw").as_int();
+
+        this->declare_parameter<int>("x_axis", 5);
+        axes_.x.axis = this->get_parameter("x_axis").as_int();
+        this->declare_parameter<int>("y_axis", 4);
+        axes_.y.axis = this->get_parameter("y_axis").as_int();
+        this->declare_parameter<int>("z_axis", 2);
+        axes_.z.axis = this->get_parameter("z_axis").as_int();
+        this->declare_parameter<int>("yaw_axis", 1);
+        axes_.yaw.axis = this->get_parameter("yaw_axis").as_int();
+
+
+        this->declare_parameter<double>("x_velocity_max", 30.0);
+        axes_.x.max = this->get_parameter("x_velocity_max").as_double();
+        this->declare_parameter<double>("y_velocity_max", -30.0);
+        axes_.y.max = this->get_parameter("y_velocity_max").as_double();
+        this->declare_parameter<double>("z_velocity_max", 60000.0);
+        axes_.z.max = this->get_parameter("z_velocity_max").as_double();
+
+        // this->declare_parameter<double>("yaw_velocity_max", 90.0 * M_PI / 180.0);
+        this->declare_parameter<double>("yaw_velocity_max", -200.0);
+        axes_.yaw.max = this->get_parameter("yaw_velocity_max").as_double();
+
 
         timer_ = this->create_wall_timer(
             std::chrono::seconds(1/frequency_),
@@ -74,12 +88,18 @@ public:
     }
 
 private:
+    
+    struct Axis
+    { 
+        int axis;
+        double max;
+    };
     struct
     {
-        int x;
-        int y;
-        int z;
-        int yaw;
+        Axis x;
+        Axis y;
+        Axis z;
+        Axis yaw;
     } axes_;
 
     void publish() 
@@ -113,21 +133,21 @@ private:
         twist_.angular.z = getAxis(msg, axes_.yaw);
     }
 
-    sensor_msgs::msg::Joy::_axes_type::value_type getAxis(const sensor_msgs::msg::Joy::SharedPtr &msg, int axis)
+    sensor_msgs::msg::Joy::_axes_type::value_type getAxis(const sensor_msgs::msg::Joy::SharedPtr &msg, Axis a)
     {
-        if (axis == 0) {
+        if (a.axis == 0) {
             return 0;
         }
 
         sensor_msgs::msg::Joy::_axes_type::value_type sign = 1.0;
-        if (axis < 0) {
+        if (a.axis < 0) {
             sign = -1.0;
-            axis = -axis;
+            a.axis = -a.axis;
         }
-        if ((size_t) axis > msg->axes.size()) {
+        if ((size_t) a.axis > msg->axes.size()) {
             return 0;
         }
-        return sign * msg->axes[axis - 1]*2;
+        return sign * msg->axes[a.axis - 1]*a.max;
     }
 
     

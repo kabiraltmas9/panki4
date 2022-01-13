@@ -75,7 +75,7 @@ public:
     const std::string& link_uri,
     const std::string& name,
     rclcpp::Node* node,
-    bool enable_parameters = true)
+    bool enable_parameters = false)
     : logger_(rclcpp::get_logger(link_uri))
     , cf_logger_(logger_)
     , cf_(
@@ -152,12 +152,12 @@ private:
 
   void cmd_vel_changed(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
-    RCLCPP_INFO(logger_, "Callback function is called...");
+    // RCLCPP_INFO(logger_, "Callback function is called...");
     float roll = msg->linear.y;
     float pitch = - (msg->linear.x);
     float yawrate = msg->angular.z;
     uint16_t thrust = std::min<uint16_t>(std::max<float>(msg->linear.z, 0.0), 60000);
-
+    // RCLCPP_INFO(logger_, "roll: %f, pitch: %f, yaw: %f, thrust: %u", roll, pitch, yawrate, (unsigned int)thrust);
     cf_.sendSetpoint(roll, pitch, yawrate, thrust);
   }
 
