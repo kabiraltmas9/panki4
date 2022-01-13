@@ -45,7 +45,7 @@ public:
 
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
         
-        this->declare_parameter<int>("frequency", 1);
+        this->declare_parameter<int>("frequency", 100);
         frequency_ = this->get_parameter("frequency").as_int();
 
         this->declare_parameter<int>("x_axis", 5);
@@ -70,9 +70,7 @@ public:
         axes_.yaw.max = this->get_parameter("yaw_velocity_max").as_double();
 
 
-        timer_ = this->create_wall_timer(
-            std::chrono::seconds(1/frequency_),
-            std::bind(&TeleopNode::publish, this));
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(1000/frequency_), std::bind(&TeleopNode::publish, this));
 
        
 
