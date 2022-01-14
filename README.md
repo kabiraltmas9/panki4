@@ -13,11 +13,12 @@ A ROS2-based stack for swarms of Bitcraze Crazyflie multirotor robots.
   * All msg/srv files similar to before (updated to follow the new style guide)
 * crazyswarm2_server package
   * Firmware parameters (mapping to parameter server with callback on updates)
-  * High-level Takeoff/Landing/GoTo/StartTrajectory (per CF, no broadcasts)
+  * High-level Takeoff/Landing/GoTo/StartTrajectory (per CF, and broadcasts)
+  * Broadcasting motion capture information
 * py_crazyswarm2
   * Former Python API (currently: very limited; physical flight only)
 * crazyswarm2_examples
-  * Former example scripts (currently: only hello_world)
+  * Former example scripts (currently: only hello_world, nice_hover, figure8)
 * Standalone tracking package, see https://github.com/IMRCLab/motion_capture_tracking/tree/ros2
 
 ## Missing
@@ -35,6 +36,7 @@ A ROS2-based stack for swarms of Bitcraze Crazyflie multirotor robots.
 mkdir -p ros2_ws/src
 cd ros2_ws/src
 git clone https://github.com/IMRCLab/crazyswarm2 --recursive
+git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
 cd ../
 colcon build
 . install/local_setup.zsh (OR . install/local_setup.bash)
@@ -46,7 +48,8 @@ ros2 run crazyswarm2 console
 ### Basic High-Level Flight
 
 ```
-ros2 param set cf1/params/commander/enHighLevel 1
+ros2 param set crazyswarm2_server cf1/params/commander/enHighLevel 1
+ros2 param set crazyswarm2_server cf3/params/stabilizer/estimator 2
 ros2 service call cf1/takeoff crazyswarm2_interfaces/srv/Takeoff "{height: 0.5, duration: {sec: 2}}"
 ros2 service call cf1/land crazyswarm2_interfaces/srv/Land "{height: 0.0, duration: {sec: 2}}"
 ```
@@ -54,7 +57,6 @@ ros2 service call cf1/land crazyswarm2_interfaces/srv/Land "{height: 0.0, durati
 ### crazyswarm2_examples
 
 ```
-ros2 param set cf1/params/commander/enHighLevel 1
 ros2 run crazyswarm2_examples hello_world
 ```
 

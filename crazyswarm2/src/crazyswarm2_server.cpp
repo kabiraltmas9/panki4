@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <regex>
 
 #include <crazyflie_cpp/Crazyflie.h>
 
@@ -10,6 +11,8 @@
 #include "crazyswarm2_interfaces/srv/land.hpp"
 #include "crazyswarm2_interfaces/srv/go_to.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "crazyswarm2_interfaces/srv/upload_trajectory.hpp"
+#include "motion_capture_tracking_interfaces/msg/named_pose_array.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -18,7 +21,10 @@ using crazyswarm2_interfaces::srv::StartTrajectory;
 using crazyswarm2_interfaces::srv::Takeoff;
 using crazyswarm2_interfaces::srv::Land;
 using crazyswarm2_interfaces::srv::GoTo;
+using crazyswarm2_interfaces::srv::UploadTrajectory;
 using std_srvs::srv::Empty;
+
+using motion_capture_tracking_interfaces::msg::NamedPoseArray;
 
 // Helper class to convert crazyflie_cpp logging messages to ROS logging messages
 class CrazyflieLogger : public Logger
@@ -73,10 +79,11 @@ class CrazyflieROS
 public:
   CrazyflieROS(
     const std::string& link_uri,
+    const std::string& cf_type,
     const std::string& name,
     rclcpp::Node* node,
-    bool enable_parameters = false)
-    : logger_(rclcpp::get_logger(link_uri))
+    bool enable_parameters = true)
+    : logger_(rclcpp::get_logger(name))
     , cf_logger_(logger_)
     , cf_(
       link_uri,
@@ -88,6 +95,7 @@ public:
     service_takeoff_ = node->create_service<Takeoff>(name + "/takeoff", std::bind(&CrazyflieROS::takeoff, this, _1, _2));
     service_land_ = node->create_service<Land>(name + "/land", std::bind(&CrazyflieROS::land, this, _1, _2));
     service_go_to_ = node->create_service<GoTo>(name + "/go_to", std::bind(&CrazyflieROS::go_to, this, _1, _2));
+    service_upload_trajectory_ = node->create_service<UploadTrajectory>(name + "/upload_trajectory", std::bind(&CrazyflieROS::upload_trajectory, this, _1, _2));
 
     subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(name + "/cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_vel_changed, this, _1)); 
     auto start = std::chrono::system_clock::now();
@@ -138,12 +146,62 @@ public:
       // Create a parameter subscriber that can be used to monitor parameter changes
       param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node);
       cb_handle_ = param_subscriber_->add_parameter_event_callback(std::bind(&CrazyflieROS::on_parameter_event, this, _1));
+
+      // Set parameters as specified in the configuration files, as in the following order
+      // 1.) check crazyswarm2_server.yaml
+      // 2.) check crazyflie_types.yaml
+      // 3.) check crazyflies.yaml
+      // where the higher order is used if defined on multiple levels.
+      auto node_parameters_iface = node->get_node_parameters_interface();
+      const std::map<std::string, rclcpp::ParameterValue> &parameter_overrides =
+          node_parameters_iface->get_parameter_overrides();
+
+      // <group>.<name> -> value map
+      std::map<std::string, rclcpp::ParameterValue> set_param_map;
+
+      // declares a lambda, to be used as local function
+      auto update_map = [&set_param_map, &parameter_overrides](const std::string& pattern)
+      {
+        for (const auto &i : parameter_overrides) {
+          if (i.first.find(pattern) == 0) {
+            size_t start = pattern.size() + 1;
+            const auto group_and_name = i.first.substr(start);
+            set_param_map[group_and_name] = i.second;
+          }
+        }
+      };
+
+      // check crazyswarm2_server.yaml
+      update_map("firmware_params");
+      // check crazyflie_types.yaml
+      update_map("crazyflie_types." + cf_type + ".firmware_params");
+      // check crazyflies.yaml
+      update_map("crazyflies." + name_ + ".firmware_params");
+
+      // Update parameters
+      for (const auto&i : set_param_map) {
+        std::string paramName = name + "/params/" + std::regex_replace(i.first, std::regex("\\."), "/");
+        node->set_parameter(rclcpp::Parameter(paramName, i.second));
+      }
     }
+
+    RCLCPP_INFO(logger_, "Requesting memories...");
+    cf_.requestMemoryToc();
   }
 
   void spin_some()
   {
     cf_.sendPing();
+  }
+
+  std::string broadcastUri() const
+  {
+    return cf_.broadcastUri();
+  }
+
+  uint8_t id() const
+  {
+    return cf_.address() & 0xFF;
   }
 
   // CrazyflieROS(CrazyflieROS &&) = default;
@@ -222,6 +280,36 @@ private:
               request->relative, request->group_mask);
   }
 
+  void upload_trajectory(const std::shared_ptr<UploadTrajectory::Request> request,
+                        std::shared_ptr<UploadTrajectory::Response> response)
+  {
+    RCLCPP_INFO(logger_, "upload_trajectory(id=%d, offset=%d)",
+                request->trajectory_id,
+                request->piece_offset);
+
+    std::vector<Crazyflie::poly4d> pieces(request->pieces.size());
+    for (size_t i = 0; i < pieces.size(); ++i)
+    {
+      if (   request->pieces[i].poly_x.size() != 8 
+          || request->pieces[i].poly_y.size() != 8
+          || request->pieces[i].poly_z.size() != 8
+          || request->pieces[i].poly_yaw.size() != 8)
+      {
+        RCLCPP_FATAL(logger_, "Wrong number of pieces!");
+        return;
+      }
+      pieces[i].duration = rclcpp::Duration(request->pieces[i].duration).seconds();
+      for (size_t j = 0; j < 8; ++j)
+      {
+        pieces[i].p[0][j] = request->pieces[i].poly_x[j];
+        pieces[i].p[1][j] = request->pieces[i].poly_y[j];
+        pieces[i].p[2][j] = request->pieces[i].poly_z[j];
+        pieces[i].p[3][j] = request->pieces[i].poly_yaw[j];
+      }
+    }
+    cf_.uploadTrajectory(request->trajectory_id, request->piece_offset, pieces);
+  }
+
   // void on_parameter_changed(const rclcpp::Parameter &p)
   // {
   //   RCLCPP_INFO(
@@ -239,16 +327,16 @@ private:
       for (auto &p : params) {
         std::string prefix = name_ + "/params/";
         if (p.get_name().find(prefix) == 0) {
-          RCLCPP_INFO(
-              logger_,
-              "Received an update to parameter \"%s\" of type: %s: \"%s\"",
-              p.get_name().c_str(),
-              p.get_type_name().c_str(),
-              p.value_to_string().c_str());
-
           size_t pos = p.get_name().find("/", prefix.size());
           std::string group(p.get_name().begin() + prefix.size(), p.get_name().begin() + pos);
           std::string name(p.get_name().begin() + pos + 1, p.get_name().end());
+
+          RCLCPP_INFO(
+              logger_,
+              "Update parameter \"%s.%s\" to %s",
+              group.c_str(),
+              name.c_str(),
+              p.value_to_string().c_str());
 
           auto entry = cf_.getParamTocEntry(group, name);
           if (entry) {
@@ -296,6 +384,7 @@ private:
   rclcpp::Service<Takeoff>::SharedPtr service_takeoff_;
   rclcpp::Service<Land>::SharedPtr service_land_;
   rclcpp::Service<GoTo>::SharedPtr service_go_to_;
+  rclcpp::Service<UploadTrajectory>::SharedPtr service_upload_trajectory_;
 
   std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> cb_handle_;
@@ -309,6 +398,7 @@ class CrazyflieServer : public rclcpp::Node
 public:
   CrazyflieServer()
       : Node("crazyswarm2_server")
+      , logger_(rclcpp::get_logger("all"))
   {
     service_emergency_ = this->create_service<Empty>("emergency", std::bind(&CrazyflieServer::emergency, this, _1, _2));
     service_start_trajectory_ = this->create_service<StartTrajectory>("start_trajectory", std::bind(&CrazyflieServer::start_trajectory, this, _1, _2));
@@ -322,16 +412,27 @@ public:
         node_parameters_iface->get_parameter_overrides();
 
     auto cf_names = extract_names(parameter_overrides, "crazyflies");
-    for (const auto &name : cf_names)
-    {
+    for (const auto &name : cf_names) {
       std::string uri = parameter_overrides.at("crazyflies." + name + ".uri").get<std::string>();
-      crazyflies_.push_back(new CrazyflieROS(uri, name, this));
+      std::string cftype = parameter_overrides.at("crazyflies." + name + ".type").get<std::string>();
+      crazyflies_.push_back(std::make_unique<CrazyflieROS>(uri, cftype, name, this));
+
+      auto broadcastUri = crazyflies_.back()->broadcastUri();
+      RCLCPP_INFO(logger_, "%s", broadcastUri.c_str());
+      if (broadcaster_.count(broadcastUri) == 0) {
+        broadcaster_.emplace(broadcastUri, std::make_unique<CrazyflieBroadcaster>(broadcastUri));
+      }
+
+      name_to_id_.insert(std::make_pair(name, crazyflies_.back()->id()));
     }
+
+    sub_poses_ = this->create_subscription<NamedPoseArray>(
+        "poses", 1, std::bind(&CrazyflieServer::posesChanged, this, _1));
   }
 
   void spin_some()
   {
-    for (auto cf : crazyflies_) {
+    for (auto& cf : crazyflies_) {
       cf->spin_some();
     }
   }
@@ -345,32 +446,104 @@ private:
   void start_trajectory(const std::shared_ptr<StartTrajectory::Request> request,
             std::shared_ptr<StartTrajectory::Response> response)
   {
+    RCLCPP_INFO(logger_, "start_trajectory(id=%d, timescale=%f, reversed=%d, group_mask=%d)",
+                request->trajectory_id,
+                request->timescale,
+                request->reversed,
+                request->group_mask);
+    for (auto &bc : broadcaster_)
+    {
+      auto &cfbc = bc.second;
+      cfbc->startTrajectory(request->trajectory_id,
+                          request->timescale,
+                          request->reversed,
+                          request->group_mask);
+    }
   }
 
   void takeoff(const std::shared_ptr<Takeoff::Request> request,
                         std::shared_ptr<Takeoff::Response> response)
   {
+    RCLCPP_INFO(logger_, "takeoff(height=%f m, duration=%f s, group_mask=%d)",
+                request->height,
+                rclcpp::Duration(request->duration).seconds(),
+                request->group_mask);
+    for (auto& bc : broadcaster_) {
+      auto& cfbc = bc.second;
+      cfbc->takeoff(request->height, rclcpp::Duration(request->duration).seconds(), request->group_mask);
+    }
   }
 
   void land(const std::shared_ptr<Land::Request> request,
            std::shared_ptr<Land::Response> response)
   {
+    RCLCPP_INFO(logger_, "land(height=%f m, duration=%f s, group_mask=%d)",
+                request->height,
+                rclcpp::Duration(request->duration).seconds(),
+                request->group_mask);
+    for (auto& bc : broadcaster_) {
+      auto& cfbc = bc.second;
+      cfbc->land(request->height, rclcpp::Duration(request->duration).seconds(), request->group_mask);
+    }
   }
 
   void go_to(const std::shared_ptr<GoTo::Request> request,
             std::shared_ptr<GoTo::Response> response)
   {
+    RCLCPP_INFO(logger_, "go_to(position=%f,%f,%f m, yaw=%f rad, duration=%f s, group_mask=%d)",
+                request->goal.x, request->goal.y, request->goal.z, request->yaw,
+                rclcpp::Duration(request->duration).seconds(),
+                request->group_mask);
+    for (auto &bc : broadcaster_)
+    {
+      auto &cfbc = bc.second;
+      cfbc->goTo(request->goal.x, request->goal.y, request->goal.z, request->yaw,
+               rclcpp::Duration(request->duration).seconds(),
+               request->group_mask);
+    }
   }
 
-private:
-  rclcpp::Service<Empty>::SharedPtr service_emergency_;
-  rclcpp::Service<StartTrajectory>::SharedPtr service_start_trajectory_;
-  rclcpp::Service<Takeoff>::SharedPtr service_takeoff_;
-  rclcpp::Service<Land>::SharedPtr service_land_;
-  rclcpp::Service<GoTo>::SharedPtr service_go_to_;
+  void posesChanged(const NamedPoseArray::SharedPtr msg)
+  {
+    // Here, we send all the poses to all CFs
+    // In Crazyswarm1, we only sent the poses of the same group (i.e. channel)
 
-  std::vector<CrazyflieROS*> crazyflies_;
-};
+    std::vector<CrazyflieBroadcaster::externalPosition> data;
+
+    for (const auto& pose : msg->poses) {
+      const auto iter = name_to_id_.find(pose.name);
+      if (iter != name_to_id_.end()) {
+        uint8_t id = iter->second;
+        data.push_back({id, (float)pose.pose.position.x, (float)pose.pose.position.y, (float)pose.pose.position.z});
+      }
+    }
+
+    if (data.size() > 0) {
+      for (auto &bc : broadcaster_) {
+        auto &cfbc = bc.second;
+        cfbc->sendExternalPositions(data);
+      }
+    }
+  }
+
+  private:
+    rclcpp::Logger logger_;
+    rclcpp::Service<Empty>::SharedPtr service_emergency_;
+    rclcpp::Service<StartTrajectory>::SharedPtr service_start_trajectory_;
+    rclcpp::Service<Takeoff>::SharedPtr service_takeoff_;
+    rclcpp::Service<Land>::SharedPtr service_land_;
+    rclcpp::Service<GoTo>::SharedPtr service_go_to_;
+
+    rclcpp::Subscription<NamedPoseArray>::SharedPtr sub_poses_;
+
+    std::vector<std::unique_ptr<CrazyflieROS>> crazyflies_;
+
+    // broadcastUri -> broadcast object
+    std::map<std::string, std::unique_ptr<CrazyflieBroadcaster>> broadcaster_;
+
+    // maps CF name -> CF id
+    std::map<std::string, uint8_t> name_to_id_;
+  };
 
 int main(int argc, char *argv[])
 {

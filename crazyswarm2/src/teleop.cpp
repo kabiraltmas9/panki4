@@ -151,11 +151,8 @@ private:
     
     void emergency()
     {
-        RCLCPP_INFO(this->get_logger(), "emergency requested...");
         auto request = std::make_shared<Empty::Request>();
-        auto result = client_emergency_->async_send_request(request);
-        rclcpp::spin_until_future_complete(this->get_node_base_interface(), result);
-        RCLCPP_INFO(this->get_logger(), "Done.");
+        client_emergency_->async_send_request(request);
     }
 
     void takeoff()
@@ -164,8 +161,7 @@ private:
         request->group_mask = 0;
         request->height = 0.5;
         request->duration = rclcpp::Duration::from_seconds(2);
-        auto result = client_takeoff_->async_send_request(request);
-        rclcpp::spin_until_future_complete(this->get_node_base_interface(), result);
+        client_takeoff_->async_send_request(request);
     }
 
     void land()
@@ -174,8 +170,7 @@ private:
         request->group_mask = 0;
         request->height = 0.0;
         request->duration = rclcpp::Duration::from_seconds(3.5);
-        auto result = client_land_->async_send_request(request);
-        rclcpp::spin_until_future_complete(this->get_node_base_interface(), result);
+        client_land_->async_send_request(request);
     }
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;

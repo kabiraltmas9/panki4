@@ -12,6 +12,7 @@ find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(crazyswarm2_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(motion_capture_tracking_interfaces REQUIRED)
 
 # add dependencies
 add_subdirectory(deps/crazyflie_tools)
@@ -48,6 +49,7 @@ ament_target_dependencies(crazyswarm2_server
   sensor_msgs
   std_srvs
   crazyswarm2_interfaces
+  motion_capture_tracking_interfaces
 )
 
 # # scan
