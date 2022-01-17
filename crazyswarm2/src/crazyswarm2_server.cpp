@@ -100,7 +100,7 @@ public:
     service_upload_trajectory_ = node->create_service<UploadTrajectory>(name + "/upload_trajectory", std::bind(&CrazyflieROS::upload_trajectory, this, _1, _2));
 
     subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(name + "/cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_vel_changed, this, _1)); 
-    subscription_cmdFullState_ = node->create_subscription<crazyswarm2_interfaces::msg::FullState>(name + "/cmdFullState", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmdFullStateSetpoint, this, _1)); 
+    subscription_cmd_full_state_ = node->create_subscription<crazyswarm2_interfaces::msg::FullState>(name + "/cmd_full_state", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_full_state_changed, this, _1)); 
 
     auto start = std::chrono::system_clock::now();
 
@@ -212,7 +212,7 @@ public:
 
 private:
 
-  void cmdFullStateSetpoint(const crazyswarm2_interfaces::msg::FullState::SharedPtr msg)
+  void cmd_full_state_changed(const crazyswarm2_interfaces::msg::FullState::SharedPtr msg)
   { 
     float x = msg->pose.position.x;
     float y = msg->pose.position.y;
@@ -424,7 +424,7 @@ private:
   // std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> cb_handles_;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr subscription_cmd_vel_;
-  rclcpp::Subscription<crazyswarm2_interfaces::msg::FullState>::SharedPtr subscription_cmdFullState_;
+  rclcpp::Subscription<crazyswarm2_interfaces::msg::FullState>::SharedPtr subscription_cmd_full_state_;
 };
 
 class CrazyflieServer : public rclcpp::Node
