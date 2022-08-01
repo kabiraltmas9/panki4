@@ -5,6 +5,15 @@ cf21:
   battery:
     voltage_warning: 3.8  # V
     voltage_critical: 3.7 # V
+
+cf21_mocap_deck:
+  marker: "mocap_deck"
+  dynamics: "default"
+  big_quad: False
+  battery:
+    voltage_warning: 3.8  # V
+    voltage_critical: 3.7 # V
+
   # firmware_params:
   #   kalman:
   #     pNAcc_xy: 1.0 # default 0.5
