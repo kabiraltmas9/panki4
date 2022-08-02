@@ -4,7 +4,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='crazyflie_server_cpp',
+            package='crazyflie',
             executable='teleop',
             name='teleop'
         ),
@@ -14,7 +14,7 @@ def generate_launch_description():
             name='joy_node'
         ),
         Node(
-            package='crazyflie_server_cpp',
+            package='crazyflie',
             executable='crazyflie_server',
             name='crazyflie_server'
         )

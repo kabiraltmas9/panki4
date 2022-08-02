@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     # load crazyflies
     crazyflies_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server_cpp'),
+        get_package_share_directory('crazyflie'),
         'config',
         'crazyflies.yaml')
 
@@ -17,7 +17,7 @@ def generate_launch_description():
 
     # load crazyflie_types
     crazyflies_types_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server_cpp'),
+        get_package_share_directory('crazyflie'),
         'config',
         'crazyflie_types.yaml')
 
@@ -26,7 +26,7 @@ def generate_launch_description():
 
     # construct motion_capture_configuration
     motion_capture_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server_cpp'),
+        get_package_share_directory('crazyflie'),
         'config',
         'motion_capture.yaml')
 
@@ -59,11 +59,11 @@ def generate_launch_description():
 
     # teleop params
     teleop_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server_cpp'),
+        get_package_share_directory('crazyflie'),
         'config',
         'teleop.yaml')
     teleop_5_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server_cpp'),
+        get_package_share_directory('crazyflie'),
         'config',
         'teleop_5.yaml')
     
@@ -76,7 +76,7 @@ def generate_launch_description():
             parameters=[motion_capture_params]
         ),
         Node(
-            package='crazyflie_server_cpp',
+            package='crazyflie',
             executable='teleop',
             name='teleop',
             remappings=[
@@ -90,7 +90,7 @@ def generate_launch_description():
             parameters=[teleop_yaml]
         ),
         Node(
-            package='crazyflie_server_cpp',
+            package='crazyflie',
             executable='teleop',
             name='teleop',
             remappings=[
@@ -119,7 +119,7 @@ def generate_launch_description():
             parameters=[{'device_id':1}] # old
         ),  
         Node(
-            package='crazyflie_server_cpp',
+            package='crazyflie',
             executable='crazyflie_server',
             name='crazyflie_server',
             output='screen',

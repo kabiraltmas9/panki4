@@ -40,7 +40,7 @@ class Crazyswarm:
         if crazyflies_yaml is None:
             from ament_index_python.packages import get_package_share_directory
             crazyflies_yaml = os.path.join(
-                get_package_share_directory('crazyflie_server_cpp'),
+                get_package_share_directory('crazyflie'),
                 'config',
                 'crazyflies.yaml')
         if crazyflies_yaml.endswith(".yaml"):
