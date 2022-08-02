@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     # load crazyflies
     crazyflies_yaml = os.path.join(
-        get_package_share_directory('crazyswarm2'),
+        get_package_share_directory('crazyflie_server_cpp'),
         'config',
         'crazyflies.yaml')
 
@@ -17,7 +17,7 @@ def generate_launch_description():
 
     # load crazyflie_types
     crazyflies_types_yaml = os.path.join(
-        get_package_share_directory('crazyswarm2'),
+        get_package_share_directory('crazyflie_server_cpp'),
         'config',
         'crazyflie_types.yaml')
 
@@ -26,7 +26,7 @@ def generate_launch_description():
 
     # construct motion_capture_configuration
     motion_capture_yaml = os.path.join(
-        get_package_share_directory('crazyswarm2'),
+        get_package_share_directory('crazyflie_server_cpp'),
         'config',
         'motion_capture.yaml')
 
@@ -44,22 +44,22 @@ def generate_launch_description():
                 "dynamics": type["dynamics"],
             }
 
-    # construct crazyswarm2_server configuration
+    # construct crazyflie_server configuration
     server_yaml = os.path.join(
-        get_package_share_directory('crazyswarm2'),
+        get_package_share_directory('crazyflie_server_cpp'),
         'config',
-        'crazyswarm2_server.yaml')
+        'crazyflie_server.yaml')
     
     with open(server_yaml, 'r') as ymlfile:
         server_params = yaml.safe_load(ymlfile)
 
-    server_params = server_params["/crazyswarm2_server"]["ros__parameters"]
+    server_params = server_params["/crazyflie_server"]["ros__parameters"]
     server_params["crazyflies"] = crazyflies
     server_params["crazyflie_types"] = crazyflie_types
 
     # teleop params
     teleop_yaml = os.path.join(
-        get_package_share_directory('crazyswarm2'),
+        get_package_share_directory('crazyflie_server_cpp'),
         'config',
         'teleop.yaml')
 
@@ -72,15 +72,15 @@ def generate_launch_description():
             parameters=[motion_capture_params]
         ),
         Node(
-            package='crazyswarm2',
+            package='crazyflie_server_cpp',
             executable='teleop',
             name='teleop',
             remappings=[
-                ('takeoff', 'cf231/takeoff'),
-                ('land', 'cf231/land'),
-                ('cmd_vel', 'cf231/cmd_vel'),
-                ('cmd_full_state', 'cf231/cmd_full_state'),
-                ('notify_setpoints_stop', 'cf231/notify_setpoints_stop'),
+                ('takeoff', 'cf6/takeoff'),
+                ('land', 'cf6/land'),
+                ('cmd_vel', 'cf6/cmd_vel'),
+                ('cmd_full_state', 'cf6/cmd_full_state'),
+                ('notify_setpoints_stop', 'cf6/notify_setpoints_stop'),
             ],
             parameters=[teleop_yaml]
         ),
@@ -90,9 +90,9 @@ def generate_launch_description():
             name='joy_node' # by default id=0
         ),
         Node(
-            package='crazyswarm2',
-            executable='crazyswarm2_server',
-            name='crazyswarm2_server',
+            package='crazyflie_server_cpp',
+            executable='crazyflie_server',
+            name='crazyflie_server',
             output='screen',
             parameters=[server_params]
         ),

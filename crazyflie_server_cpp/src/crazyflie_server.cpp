@@ -158,7 +158,7 @@ public:
       cb_handle_ = param_subscriber_->add_parameter_event_callback(std::bind(&CrazyflieROS::on_parameter_event, this, _1));
 
       // Set parameters as specified in the configuration files, as in the following order
-      // 1.) check crazyswarm2_server.yaml
+      // 1.) check crazyflie_server.yaml
       // 2.) check crazyflie_types.yaml
       // 3.) check crazyflies.yaml
       // where the higher order is used if defined on multiple levels.
@@ -181,7 +181,7 @@ public:
         }
       };
 
-      // check crazyswarm2_server.yaml
+      // check crazyflie_server.yaml
       update_map("firmware_params");
       // check crazyflie_types.yaml
       update_map("crazyflie_types." + cf_type + ".firmware_params");
@@ -387,7 +387,7 @@ private:
 
   void on_parameter_event(const rcl_interfaces::msg::ParameterEvent &event)
   {
-    if (event.node == "/crazyswarm2_server") {
+    if (event.node == "/crazyflie_server") {
       auto params = param_subscriber_->get_parameters_from_event(event);
       for (auto &p : params) {
         std::string prefix = name_ + "/params/";
@@ -466,7 +466,7 @@ class CrazyflieServer : public rclcpp::Node
 {
 public:
   CrazyflieServer()
-      : Node("crazyswarm2_server")
+      : Node("crazyflie_server")
       , logger_(rclcpp::get_logger("all"))
   {
     service_emergency_ = this->create_service<Empty>("emergency", std::bind(&CrazyflieServer::emergency, this, _1, _2));

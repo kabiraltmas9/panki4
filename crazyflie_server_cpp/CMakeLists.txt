@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(crazyswarm2)
+project(crazyflie_server_cpp)
 
 #if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 #  add_compile_options(-Wall -Wextra -Wpedantic)
@@ -40,13 +40,13 @@ ament_target_dependencies(teleop
   geometry_msgs
 )
 
-add_executable(crazyswarm2_server 
-  src/crazyswarm2_server.cpp
+add_executable(crazyflie_server 
+  src/crazyflie_server.cpp
 )
-target_link_libraries(crazyswarm2_server
+target_link_libraries(crazyflie_server
   crazyflie_cpp
 )
-ament_target_dependencies(crazyswarm2_server
+ament_target_dependencies(crazyflie_server
   rclcpp
   sensor_msgs
   std_srvs
@@ -94,7 +94,7 @@ install(TARGETS
   setParam
   #
   teleop
-  crazyswarm2_server
+  crazyflie_server
   DESTINATION lib/${PROJECT_NAME})
 
 # Install Python executables

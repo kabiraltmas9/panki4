@@ -1,4 +1,4 @@
-/crazyswarm2_server:
+/crazyflie_server:
   ros__parameters:
     # firmware parameters for all drones (use crazyflieTypes.yaml to set per type, or
     # allCrazyflies.yaml to set per drone)

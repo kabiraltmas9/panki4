@@ -125,11 +125,11 @@ class Crazyflie:
         self.startTrajectoryService.wait_for_service()
         self.notifySetpointsStopService = node.create_client(NotifySetpointsStop, prefix + "/notify_setpoints_stop")
         self.notifySetpointsStopService.wait_for_service()
-        self.setParamsService = node.create_client(SetParameters, "/crazyswarm2_server/set_parameters")
+        self.setParamsService = node.create_client(SetParameters, "/crazyflie_server/set_parameters")
         self.setParamsService.wait_for_service()
 
         # Query all parameters
-        listParamsService = node.create_client(ListParameters, "/crazyswarm2_server/list_parameters")
+        listParamsService = node.create_client(ListParameters, "/crazyflie_server/list_parameters")
         listParamsService.wait_for_service()
         req = ListParameters.Request()
         req.depth = ListParameters.Request.DEPTH_RECURSIVE
@@ -149,7 +149,7 @@ class Crazyflie:
                 break
 
         # Find the types for the parameters and store them
-        getParamTypesService = node.create_client(GetParameterTypes, "/crazyswarm2_server/get_parameter_types")
+        getParamTypesService = node.create_client(GetParameterTypes, "/crazyflie_server/get_parameter_types")
         getParamTypesService.wait_for_service()
         req = GetParameterTypes.Request()
         req.names = params
