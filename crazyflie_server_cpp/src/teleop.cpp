@@ -5,11 +5,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_srvs/srv/empty.hpp"
-#include "crazyswarm2_interfaces/srv/takeoff.hpp"
-#include "crazyswarm2_interfaces/srv/land.hpp"
-#include <crazyswarm2_interfaces/srv/notify_setpoints_stop.hpp>
+#include "crazyflie_interfaces/srv/takeoff.hpp"
+#include "crazyflie_interfaces/srv/land.hpp"
+#include <crazyflie_interfaces/srv/notify_setpoints_stop.hpp>
 #include "geometry_msgs/msg/twist.hpp"
-#include "crazyswarm2_interfaces/msg/full_state.hpp"
+#include "crazyflie_interfaces/msg/full_state.hpp"
 
 
 #include <Eigen/Geometry>
@@ -17,10 +17,10 @@
 using std::placeholders::_1;
 
 using std_srvs::srv::Empty;
-using crazyswarm2_interfaces::srv::Takeoff;
-using crazyswarm2_interfaces::srv::Land;
-using crazyswarm2_interfaces::srv::NotifySetpointsStop;
-using crazyswarm2_interfaces::msg::FullState;
+using crazyflie_interfaces::srv::Takeoff;
+using crazyflie_interfaces::srv::Land;
+using crazyflie_interfaces::srv::NotifySetpointsStop;
+using crazyflie_interfaces::msg::FullState;
 
 using namespace std::chrono_literals;
 using namespace Eigen;
@@ -50,7 +50,7 @@ public:
             "joy", 1, std::bind(&TeleopNode::joyChanged, this, _1));
 
         pub_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-        pub_cmd_full_state_ = this->create_publisher<crazyswarm2_interfaces::msg::FullState>("cmd_full_state", 10);
+        pub_cmd_full_state_ = this->create_publisher<crazyflie_interfaces::msg::FullState>("cmd_full_state", 10);
 
         this->declare_parameter("frequency", 0);
         this->get_parameter<int>("frequency", frequency_);
@@ -284,11 +284,11 @@ private:
     rclcpp::Client<Land>::SharedPtr client_land_;
     rclcpp::Client<NotifySetpointsStop>::SharedPtr client_notify_setpoints_stop_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
-    rclcpp::Publisher<crazyswarm2_interfaces::msg::FullState>::SharedPtr pub_cmd_full_state_;
+    rclcpp::Publisher<crazyflie_interfaces::msg::FullState>::SharedPtr pub_cmd_full_state_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::TimerBase::SharedPtr timer_takeoff_;
     geometry_msgs::msg::Twist twist_;
-    crazyswarm2_interfaces::msg::FullState fullstate_;
+    crazyflie_interfaces::msg::FullState fullstate_;
     std::vector<double> x_limit_;
     std::vector<double> y_limit_;
     std::vector<double> z_limit_;

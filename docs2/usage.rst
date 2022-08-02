@@ -26,7 +26,7 @@ Example:
 
 .. code-block:: bash
 
-    ros2 run crazyswarm2_examples hello_world --sim
+    ros2 run crazyflie_examples hello_world --sim
 
 
 Physical Experiments
@@ -39,8 +39,8 @@ ROS2 terminal
 
     ros2 param set crazyswarm2_server cf1/params/commander/enHighLevel 1
     ros2 param set crazyswarm2_server cf3/params/stabilizer/estimator 2
-    ros2 service call cf1/takeoff crazyswarm2_interfaces/srv/Takeoff "{height: 0.5, duration: {sec: 2}}"
-    ros2 service call cf1/land crazyswarm2_interfaces/srv/Land "{height: 0.0, duration: {sec: 2}}"
+    ros2 service call cf1/takeoff crazyflie_interfaces/srv/Takeoff "{height: 0.5, duration: {sec: 2}}"
+    ros2 service call cf1/land crazyflie_interfaces/srv/Land "{height: 0.0, duration: {sec: 2}}"
 
 Teleoperation
 ~~~~~~~~~~~~~
@@ -65,4 +65,4 @@ In the second terminal
 
 .. code-block:: bash
 
-    ros2 run crazyswarm2_examples hello_world
+    ros2 run crazyflie_examples hello_world

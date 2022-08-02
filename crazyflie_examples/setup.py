@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'crazyswarm2_examples'
+package_name = 'crazyflie_examples'
 
 setup(
     name=package_name,
@@ -21,10 +21,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'hello_world = crazyswarm2_examples.hello_world:main',
-            'nice_hover = crazyswarm2_examples.nice_hover:main',
-            'figure8 = crazyswarm2_examples.figure8:main',
-            'cmd_full_state = crazyswarm2_examples.cmd_full_state:main',
+            'hello_world = crazyflie_examples.hello_world:main',
+            'nice_hover = crazyflie_examples.nice_hover:main',
+            'figure8 = crazyflie_examples.figure8:main',
+            'cmd_full_state = crazyflie_examples.cmd_full_state:main',
         ],
     },
 )

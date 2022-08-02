@@ -11,7 +11,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(crazyswarm2_interfaces REQUIRED)
+find_package(crazyflie_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(motion_capture_tracking_interfaces REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -36,7 +36,7 @@ ament_target_dependencies(teleop
   rclcpp
   sensor_msgs
   std_srvs
-  crazyswarm2_interfaces
+  crazyflie_interfaces
   geometry_msgs
 )
 
@@ -50,7 +50,7 @@ ament_target_dependencies(crazyswarm2_server
   rclcpp
   sensor_msgs
   std_srvs
-  crazyswarm2_interfaces
+  crazyflie_interfaces
   motion_capture_tracking_interfaces
 )
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from py_crazyswarm2 import *
+from crazyflie_py import *
 
 
 def main():

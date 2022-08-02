@@ -3,8 +3,8 @@
 import numpy as np
 from pathlib import Path
 
-from py_crazyswarm2 import *
-from py_crazyswarm2.uav_trajectory import Trajectory
+from crazyflie_py import *
+from crazyflie_py.uav_trajectory import Trajectory
 
 
 def executeTrajectory(timeHelper, cf, trajpath, rate=100, offset=np.zeros(3)):

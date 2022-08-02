@@ -6,30 +6,30 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/empty.hpp"
-#include "crazyswarm2_interfaces/srv/start_trajectory.hpp"
-#include "crazyswarm2_interfaces/srv/takeoff.hpp"
-#include "crazyswarm2_interfaces/srv/land.hpp"
-#include "crazyswarm2_interfaces/srv/go_to.hpp"
-#include "crazyswarm2_interfaces/srv/notify_setpoints_stop.hpp"
+#include "crazyflie_interfaces/srv/start_trajectory.hpp"
+#include "crazyflie_interfaces/srv/takeoff.hpp"
+#include "crazyflie_interfaces/srv/land.hpp"
+#include "crazyflie_interfaces/srv/go_to.hpp"
+#include "crazyflie_interfaces/srv/notify_setpoints_stop.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "crazyswarm2_interfaces/srv/upload_trajectory.hpp"
+#include "crazyflie_interfaces/srv/upload_trajectory.hpp"
 #include "motion_capture_tracking_interfaces/msg/named_pose_array.hpp"
-#include "crazyswarm2_interfaces/msg/full_state.hpp"
-#include "crazyswarm2_interfaces/msg/position.hpp"
+#include "crazyflie_interfaces/msg/full_state.hpp"
+#include "crazyflie_interfaces/msg/position.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-using crazyswarm2_interfaces::srv::StartTrajectory;
-using crazyswarm2_interfaces::srv::Takeoff;
-using crazyswarm2_interfaces::srv::Land;
-using crazyswarm2_interfaces::srv::GoTo;
-using crazyswarm2_interfaces::srv::UploadTrajectory;
-using crazyswarm2_interfaces::srv::NotifySetpointsStop;
+using crazyflie_interfaces::srv::StartTrajectory;
+using crazyflie_interfaces::srv::Takeoff;
+using crazyflie_interfaces::srv::Land;
+using crazyflie_interfaces::srv::GoTo;
+using crazyflie_interfaces::srv::UploadTrajectory;
+using crazyflie_interfaces::srv::NotifySetpointsStop;
 using std_srvs::srv::Empty;
 
 using motion_capture_tracking_interfaces::msg::NamedPoseArray;
-using crazyswarm2_interfaces::msg::FullState;
+using crazyflie_interfaces::msg::FullState;
 
 // Helper class to convert crazyflie_cpp logging messages to ROS logging messages
 class CrazyflieLogger : public Logger
@@ -105,8 +105,8 @@ public:
     service_notify_setpoints_stop_ = node->create_service<NotifySetpointsStop>(name + "/notify_setpoints_stop", std::bind(&CrazyflieROS::notify_setpoints_stop, this, _1, _2));
 
     subscription_cmd_vel_ = node->create_subscription<geometry_msgs::msg::Twist>(name + "/cmd_vel", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_vel_changed, this, _1));
-    subscription_cmd_full_state_ = node->create_subscription<crazyswarm2_interfaces::msg::FullState>(name + "/cmd_full_state", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_full_state_changed, this, _1));
-    subscription_cmd_position_ = node->create_subscription<crazyswarm2_interfaces::msg::Position>(name + "/cmd_position", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_position_changed, this, _1));
+    subscription_cmd_full_state_ = node->create_subscription<crazyflie_interfaces::msg::FullState>(name + "/cmd_full_state", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_full_state_changed, this, _1));
+    subscription_cmd_position_ = node->create_subscription<crazyflie_interfaces::msg::Position>(name + "/cmd_position", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_position_changed, this, _1));
 
     auto start = std::chrono::system_clock::now();
 
@@ -221,7 +221,7 @@ public:
 
 private:
 
-  void cmd_full_state_changed(const crazyswarm2_interfaces::msg::FullState::SharedPtr msg)
+  void cmd_full_state_changed(const crazyflie_interfaces::msg::FullState::SharedPtr msg)
   { 
     float x = msg->pose.position.x;
     float y = msg->pose.position.y;
@@ -249,7 +249,7 @@ private:
 
   }
 
-  void cmd_position_changed(const crazyswarm2_interfaces::msg::Position::SharedPtr msg) {
+  void cmd_position_changed(const crazyflie_interfaces::msg::Position::SharedPtr msg) {
     float x = msg->x;
     float y = msg->y;
     float z = msg->z;
@@ -458,8 +458,8 @@ private:
   // std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> cb_handles_;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr subscription_cmd_vel_;
-  rclcpp::Subscription<crazyswarm2_interfaces::msg::FullState>::SharedPtr subscription_cmd_full_state_;
-  rclcpp::Subscription<crazyswarm2_interfaces::msg::Position>::SharedPtr subscription_cmd_position_;
+  rclcpp::Subscription<crazyflie_interfaces::msg::FullState>::SharedPtr subscription_cmd_full_state_;
+  rclcpp::Subscription<crazyflie_interfaces::msg::Position>::SharedPtr subscription_cmd_position_;
 };
 
 class CrazyflieServer : public rclcpp::Node

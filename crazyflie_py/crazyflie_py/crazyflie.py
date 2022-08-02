@@ -21,8 +21,8 @@ from std_srvs.srv import Empty
 from geometry_msgs.msg import Point
 from rcl_interfaces.srv import SetParameters, ListParameters, GetParameterTypes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
-from crazyswarm2_interfaces.srv import Takeoff, Land, GoTo, UploadTrajectory, StartTrajectory, NotifySetpointsStop
-from crazyswarm2_interfaces.msg import TrajectoryPolynomialPiece, FullState, Position
+from crazyflie_interfaces.srv import Takeoff, Land, GoTo, UploadTrajectory, StartTrajectory, NotifySetpointsStop
+from crazyflie_interfaces.msg import TrajectoryPolynomialPiece, FullState, Position
 
 def arrayToGeometryPoint(a):
     result = Point()

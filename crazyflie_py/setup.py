@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'py_crazyswarm2'
+package_name = 'crazyflie_py'
 
 setup(
     name=package_name,
