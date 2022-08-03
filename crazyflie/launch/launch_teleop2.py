@@ -46,7 +46,7 @@ def generate_launch_description():
 
     # construct crazyflie_server configuration
     server_yaml = os.path.join(
-        get_package_share_directory('crazyflie_server'),
+        get_package_share_directory('crazyflie'),
         'config',
         'crazyflie_server.yaml')
     

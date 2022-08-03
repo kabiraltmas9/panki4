@@ -24,7 +24,7 @@ class CrazyflieServer(Node):
 
         # Read out crazyflie URIs 
         crazyflies_yaml = os.path.join(
-            get_package_share_directory("crazyswarm2"), "config", "crazyflies.yaml"
+            get_package_share_directory("crazyflie"), "config", "crazyflies.yaml"
         )
         with open(crazyflies_yaml) as f:
             data = yaml.safe_load(f)
