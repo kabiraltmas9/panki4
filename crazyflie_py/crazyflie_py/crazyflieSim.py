@@ -459,7 +459,7 @@ class CrazyflieServer:
 
         self.crazyflies = []
         self.crazyfliesById = dict()
-        for cfname, cfsettings in cfg.items():
+        for cfname, cfsettings in cfg["robots"].items():
             initialPosition = cfsettings["initial_position"]
             if "id" in cfsettings:
                 cfid = int(cfsettings["id"])
