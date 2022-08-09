@@ -30,12 +30,12 @@ def generate_launch_description():
     motion_capture_params["rigid_bodies"] = dict()
     for key, value in crazyflies["robots"].items():
         type = crazyflies["robot_types"][value["type"]]
-        
-        motion_capture_params["rigid_bodies"][key] =  {
-                "initial_position": value["initial_position"],
-                "marker": type["marker"],
-                "dynamics": type["dynamics"],
-            }
+        if value["enabled"] and type["motion_capture"]["enabled"]:
+            motion_capture_params["rigid_bodies"][key] =  {
+                    "initial_position": value["initial_position"],
+                    "marker": type["motion_capture"]["marker"],
+                    "dynamics": type["motion_capture"]["dynamics"],
+                }
 
     # teleop params
     teleop_params = os.path.join(

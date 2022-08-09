@@ -1,26 +1,18 @@
 # named list of all robots
 robots:
   cf231:
-    enabled: True
-    # Use URI -OR- id + channel
-    # uri: "radio://0/80/2M/E7E7E7E701"
-    uri: "radio://0/80/2M/E7E7E7E7E7"
-    # id: 1
-    # channel: 80
-    initial_position: [0,0,0]
-    type: "cf21"
+    enabled: true
+    uri: radio://0/80/2M/E7E7E7E7E7
+    initial_position: [0, 0, 0]
+    type: cf21
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
   cf5:
-    enabled: True
-    # Use URI -OR- id + channel
-    # uri: "radio://0/80/2M/E7E7E7E701"
-    uri: "radio://0/80/2M/E7E7E7E705"
-    # id: 1
-    # channel: 80
-    initial_position: [0,-0.5,0]
-    type: "cf21"
+    enabled: false
+    uri: radio://0/80/2M/E7E7E7E705
+    initial_position: [0, -0.5, 0]
+    type: cf21
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -29,22 +21,22 @@ robots:
 robot_types:
   cf21:
     motion_capture:
-      enabled: True
+      enabled: true
       # only if enabled; see motion_capture.yaml
-      marker: "default_single_marker"
-      dynamics: "default"
-    big_quad: False
+      marker: default_single_marker
+      dynamics: default
+    big_quad: false
     battery:
       voltage_warning: 3.8  # V
       voltage_critical: 3.7 # V
 
   cf21_mocap_deck:
     motion_capture:
-      enabled: True
+      enabled: true
       # only if enabled; see motion_capture.yaml
-      marker: "mocap_deck"
-      dynamics: "default"
-    big_quad: False
+      marker: mocap_deck
+      dynamics: default
+    big_quad: false
     battery:
       voltage_warning: 3.8  # V
       voltage_critical: 3.7 # V

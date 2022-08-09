@@ -58,7 +58,8 @@ if __name__ == '__main__':
 	yaml = YAML()
 	cfg = yaml.load(pathlib.Path(args.configpath) / "crazyflies.yaml")
 
-	enabled = cfg["robots"].keys()
+	cfTypes = cfg["robot_types"]
+	enabled = [name for name in cfg["robots"].keys() if cfg["robots"][name]["enabled"] == True]
 
 
 	# compute absolute pixel coordinates from the initial positions

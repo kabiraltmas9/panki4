@@ -482,17 +482,20 @@ public:
 
     auto cf_names = extract_names(parameter_overrides, "robots");
     for (const auto &name : cf_names) {
-      std::string uri = parameter_overrides.at("robots." + name + ".uri").get<std::string>();
-      std::string cftype = parameter_overrides.at("robots." + name + ".type").get<std::string>();
-      crazyflies_.push_back(std::make_unique<CrazyflieROS>(uri, cftype, name, this));
+      bool enabled = parameter_overrides.at("robots." + name + ".enabled").get<bool>();
+      if (enabled) {
+        std::string uri = parameter_overrides.at("robots." + name + ".uri").get<std::string>();
+        std::string cftype = parameter_overrides.at("robots." + name + ".type").get<std::string>();
+        crazyflies_.push_back(std::make_unique<CrazyflieROS>(uri, cftype, name, this));
 
-      auto broadcastUri = crazyflies_.back()->broadcastUri();
-      RCLCPP_INFO(logger_, "%s", broadcastUri.c_str());
-      if (broadcaster_.count(broadcastUri) == 0) {
-        broadcaster_.emplace(broadcastUri, std::make_unique<CrazyflieBroadcaster>(broadcastUri));
+        auto broadcastUri = crazyflies_.back()->broadcastUri();
+        RCLCPP_INFO(logger_, "%s", broadcastUri.c_str());
+        if (broadcaster_.count(broadcastUri) == 0) {
+          broadcaster_.emplace(broadcastUri, std::make_unique<CrazyflieBroadcaster>(broadcastUri));
+        }
+
+        name_to_id_.insert(std::make_pair(name, crazyflies_.back()->id()));
       }
-
-      name_to_id_.insert(std::make_pair(name, crazyflies_.back()->id()));
     }
 
     sub_poses_ = this->create_subscription<NamedPoseArray>(
