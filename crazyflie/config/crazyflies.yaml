@@ -4,7 +4,7 @@ robots:
     enabled: true
     uri: radio://0/80/2M/E7E7E7E7E7
     initial_position: [0, 0, 0]
-    type: cf21
+    type: cf21  # see robot_types
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -12,7 +12,7 @@ robots:
     enabled: false
     uri: radio://0/80/2M/E7E7E7E705
     initial_position: [0, -0.5, 0]
-    type: cf21
+    type: cf21  # see robot_types
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -29,6 +29,9 @@ robot_types:
     battery:
       voltage_warning: 3.8  # V
       voltage_critical: 3.7 # V
+    # firmware_params:
+    #   kalman:
+    #     pNAcc_xy: 1.0 # default 0.5
 
   cf21_mocap_deck:
     motion_capture:
@@ -40,10 +43,13 @@ robot_types:
     battery:
       voltage_warning: 3.8  # V
       voltage_critical: 3.7 # V
+    # firmware_params:
+    #   kalman:
+    #     pNAcc_xy: 1.0 # default 0.5
 
-# global settings
-settings:
-  # firmware parameters for all drones (use types/type_name to set per type, or
+# global settings for all robots
+all_robots:
+  # firmware parameters for all drones (use robot_types/type_name to set per type, or
   # robots/drone_name to set per drone)
   firmware_params:
     commander:

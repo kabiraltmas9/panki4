@@ -158,7 +158,7 @@ public:
       cb_handle_ = param_subscriber_->add_parameter_event_callback(std::bind(&CrazyflieROS::on_parameter_event, this, _1));
 
       // Set parameters as specified in the configuration files, as in the following order
-      // 1.) check global settings/firmware_params
+      // 1.) check all_robots/firmware_params
       // 2.) check robot_types/<type_name>/firmware_params
       // 3.) check robots/<robot_name>/firmware_params
       // where the higher order is used if defined on multiple levels.
@@ -182,7 +182,7 @@ public:
       };
 
       // check global settings/firmware_params
-      update_map("settings.firmware_params");
+      update_map("all_robots.firmware_params");
       // check robot_types/<type_name>/firmware_params
       update_map("robot_types." + cf_type + ".firmware_params");
       // check robots/<robot_name>/firmware_params
