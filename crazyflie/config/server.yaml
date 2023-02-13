@@ -8,6 +8,6 @@
         rviz:
           enabled: true
         pdf:
-          enabled: true
+          enabled: false
           output_file: "result.pdf"
       controller: mellinger # none, pid, mellinger
