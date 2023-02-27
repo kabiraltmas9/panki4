@@ -821,7 +821,7 @@ class CrazyflieServer(rclpy.node.Node):
                 param_type = cf.paramTypeDict[name]
                 break
         if param_type is None:
-            self.get_logger().error("Unknown param type!")
+            self.node.get_logger().error("Unknown param type!")
             return
         if param_type == ParameterType.PARAMETER_INTEGER:
             param_value = ParameterValue(type=param_type, integer_value=int(value))

@@ -1,6 +1,5 @@
 import bpy
 import numpy as np
-from scipy.spatial.distance import cdist
 import os
 import datetime
 import rowan as rw
@@ -26,21 +25,6 @@ class Visualization:
     def __init__(self, node: Node, params: dict, names: list[str], states: list[State]):
         self.node = node
 
-        ### # internal rotation to ensure that Z<0 is in front, X>0 is right, and Y>0 is up
-        ### # so that blender takes picture from cf's perspective, where X>0 is front, Y>0 is left, and Z>0 is up
-        ### self._rot_world_2_cam = np.array([
-        ###     [ 0, 0,-1],
-        ###     [-1, 0, 0],
-        ###     [ 0, 1, 0],
-        ### ])
-
-        # internal rotation to ensure that objects are in front of the camera as planned
-        self._rot_cam_2_world = np.array([
-            [ 0,-1, 0],
-            [ 0, 0, 1],
-            [-1, 0, 0],
-        ])
-
         ## blender 
         # load environment
         world = bpy.context.scene.world
@@ -49,15 +33,20 @@ class Visualization:
         self.env = world.node_tree.nodes.new("ShaderNodeTexEnvironment")
         for subdir, dirs, files in os.walk("src/crazyswarm2/crazyflie_sim/data/env"):
             bg_paths = [os.path.join(subdir, file) for file in files]
-        self.bg_idx = 0
-        self.bg_imgs = [bpy.data.images.load(bgp) for bgp in bg_paths]
-        self.env.image = self.bg_imgs[self.bg_idx]
+        if params["cycle_bg"]:
+            self.cycle_bg = True
+            self.bg_idx = 0
+            self.bg_imgs = [bpy.data.images.load(bgp) for bgp in bg_paths]
+            self.env.image = self.bg_imgs[self.bg_idx]
+        else:
+            self.cycle_bg = False
+            self.env.image = bpy.data.images.load("src/crazyswarm2/crazyflie_sim/data/env/env.jpg")
         node_tree = world.node_tree
         node_tree.links.new(self.env.outputs["Color"], node_tree.nodes["Background"].inputs["Color"])
 
         # import crazyflie object 
-        bpy.ops.import_scene.obj(filepath="src/crazyswarm2/crazyflie_sim/data/cf2.obj", axis_forward="Y", axis_up="Z")
-        self.cf_default = bpy.data.objects["cf2"]
+        bpy.ops.import_scene.obj(filepath="src/crazyswarm2/crazyflie_sim/data/model/cf.obj", axis_forward="Y", axis_up="Z")
+        self.cf_default = bpy.data.objects["cf"]
         # save scene
         self.scene = bpy.context.scene
         self.scene.render.resolution_x = 320
@@ -110,14 +99,6 @@ class Visualization:
         if self.auto_yaw:
             self.radps = params["auto_yaw"]["radps"]
 
-        # for collision check
-        self.intersection_thresh = 0.15
-
-        # clip scene
-        # TODO: do not hardcode
-        self.bbox_min = np.array([-0.5,-0.5,0.2])
-        self.bbox_max = np.array([0.5,0.5,1.25])
-
         self.names = names
         self.n = len(names)
         self.state_filenames = []
@@ -144,29 +125,6 @@ class Visualization:
             self.cf_list[idx].rotation_quaternion = np.array(state.quat)
             # set positions
             self.cf_list[idx].location = np.array(state.pos)
-
-        # setup fixed observer camera if enabled
-        self.observer_cam = False
-        if "observer" in params and params["observer"]["enabled"]:
-            self.observer_cam = True
-            self.p_fixed_obs_cam = np.array(params["observer"]["pos"])
-            self.q_fixed_obs_cam = np.array(params["observer"]["quat"])
-            os.mkdir(self.path + "/cam/")  # create dir camera to save images in (cfs have their own as well)
-            self.cam_sf = f"{self.path}/cam/cam.csv"
-            # calibration
-            calibration_sf = f"{self.path}/cam/calibration.yaml"
-            calibration = params["observer"]["calibration"]
-            calibration["tvec"] = np.zeros(3).tolist()
-            calibration["dist_coeff"] = np.zeros(5).tolist()
-            calibration["camera_matrix"] = np.array([[170.0,0,160.0], [0,170.0,160.0],[0,0,1]]).tolist()
-            with open(calibration_sf, "w") as file:
-                yaml.dump(calibration, file)
-            rvec = np.array(calibration["rvec"])
-            q_real_camera_to_robot = rw.inverse(opencv2quat(rvec))
-            q_virtual_camera_to_real_camera = rw.from_euler(np.pi, 0, 0, "xyz")
-            self.q_virt_obs_cam = rw.multiply(q_real_camera_to_robot, q_virtual_camera_to_real_camera)
-            with open(self.cam_sf, "w") as file:
-                file.write("image_name,timestamp,x,y,z,qw,qx,qy,qz\n")
 
         for name in names:
             os.mkdir(self.path + "/" + name + "/")  # create dir for every cf for saving images
@@ -206,18 +164,6 @@ class Visualization:
                 Q[idx] = np.array(state.quat) if not self.auto_yaw else rw.multiply(rw.from_euler(self.radps*t,0,0), np.array(state.quat))
                 P[idx] = np.array(state.pos) 
 
-            # check minimum distance between two robots
-            dists = cdist(P, P, metric="euclidean")
-            np.fill_diagonal(dists, self.intersection_thresh)
-            if dists.min() < self.intersection_thresh:
-                return
-
-            # clip scene
-            if not (np.all(self.bbox_min < P) and np.all(P < self.bbox_max)):
-                return
-
-            for name, state in zip(self.names, states):
-                idx = self.names_idx_map[name]
                 # set rotations
                 self.cf_list[idx].rotation_quaternion = Q[idx]
                 # set positions
@@ -228,27 +174,10 @@ class Visualization:
                 with open(self.state_filenames[idx], "a") as file:
                     file.write(f"{image_name},{t},{P[idx,0]},{P[idx,1]},{P[idx,2]},{Q[idx,0]},{Q[idx,1]},{Q[idx,2]},{Q[idx,3]}\n")
 
-            # set background image
-            self.bg_idx = (self.bg_idx + 1) % len(self.bg_imgs)
-            self.env.image = self.bg_imgs[self.bg_idx]
-
-            if self.observer_cam:
-                # take picture from fixed observer camera's pov
-                # rotation
-                q_cam = rw.multiply(self.q_fixed_obs_cam, self.q_virt_obs_cam)
-                self.camera.rotation_quaternion = q_cam
-                self.lamp.rotation_quaternion = q_cam
-                # positions
-                p_cam = self.p_fixed_obs_cam
-                self.camera.location = p_cam
-                self.lamp.location = p_cam
-                image_name = f"cam_{self.frame:05}.jpg"  # image capturing scene from cf's pov
-                # record observer camera state in world frame if enabled
-                with open(self.cam_sf, "a") as file:
-                    file.write(f"{image_name},{t},{self.p_fixed_obs_cam[0]},{self.p_fixed_obs_cam[1]},{self.p_fixed_obs_cam[2]},{self.q_fixed_obs_cam[0]},{self.q_fixed_obs_cam[1]},{self.q_fixed_obs_cam[2]},{self.q_fixed_obs_cam[3]}\n")
-                # Render image
-                self.scene.render.filepath = f"{self.path}/cam/{image_name}"
-                bpy.ops.render.render(write_still=True)
+            # cycle background image if enabled
+            if self.cycle_bg:
+                self.bg_idx = (self.bg_idx + 1) % len(self.bg_imgs)
+                self.env.image = self.bg_imgs[self.bg_idx]
 
             # render images from cfs' perspectives
             for name, state in zip(self.names, states):
@@ -270,7 +199,6 @@ class Visualization:
                 bpy.ops.render.render(write_still=True)
                 # show again after rendering
                 self.cf_list[idx].hide_render = False
-            #self.frame += 1
 
     def shutdown(self):
         for idx in range(1,self.n):

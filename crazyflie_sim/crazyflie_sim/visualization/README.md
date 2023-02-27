@@ -5,35 +5,28 @@
 ### Dependencies
 
 - `bpy`
-- `scipy` 
 - `rowan`
 - `numpy` 
 - `yaml` 
 
 ### Output
-- Takes pictures from robots' perspectives and (optionally) from a fixed camera observer
+- Takes pictures from robots' perspectives
 - Saves pictures in working directory in `simulation_results/<date-and-time>/Raw-Dataset` with the following folder structure
 
     ```
     Raw-Dataset
-    ├── cam
+    ├── cf1
     │   ├── calibration.yaml
-    │   ├── cam.csv
-    │   ├── cam_00000.jpg
-    │   ├── cam_00001.jpg
-    │   └── ...
-    ├── cf0
-    │   ├── calibration.yaml
-    │   ├── cf231.csv
-    │   ├── cf231_00000.jpg
-    │   ├── cf231_00001.jpg
+    │   ├── cf0.csv
+    │   ├── cf0_00000.jpg
+    │   ├── cf0_00001.jpg
     │   └── ...
     ├── ...
     └── cfn
         ├── calibration.yaml
-        ├── cf1.csv
-        ├── cf1_00000.jpg
-        ├── cf1_00001.jpg
+        ├── cfn.csv
+        ├── cfn_00000.jpg
+        ├── cfn_00001.jpg
         └── ...
     ```
     where `<name>.csv` contains the states in world coordinates of the camera or crazyflie, `calibration.yaml` contains the calibration information of the cameras and 
@@ -54,10 +47,11 @@
     * for every robot in `cf_cameras`:
         - `calibration`
             * `camera_matrix: list[float]`, camera matrix as list in row-major order
-            * `dist_coeff: list[float]` 
-            * `tvec: list[float]` 
+            * `dist_coeff: list[float]` (has no effect at the moment, defaults to $(0,0,0,0,0)^\top$)
+            * `tvec: list[float]` (has no effect at the moment, defaults to $(0,0,0)^\top$)
             * `rvec: list[float]` 
 - Example configuration  
+
     ```yaml
     blender:
       enabled: true
@@ -65,6 +59,7 @@
         enabled: true
         radps: 5   # radians per second
       fps: 1           # frames per second
+      cycle_bg: false  # if true, pictures will cycle through different environemt background images (useful for synthetic image generation). Otherwise a single environment background image will be used
       cf_cameras:      # names of crazyflies with cameras on them if enabled in `crazyflies.yaml`
         cf231:
           calibration:
@@ -84,13 +79,10 @@
             dist_coeff: [0,0,0,0,0]
             tvec: [0,0,0]
             rvec: [0.0,0.0,1.5707963267948966]    # 90 deg tilt
-      observer:        # static observer camera 
-        enabled: false
-        pos: [-0.1,0,1]
-        quat: [1,0,0,0]
-        calibration:
-          camera_matrix: [170.0, 0.0, 160.0, 0.0, 170.0, 160.0, 0.0, 0.0, 1.0] # matrix in row-major order
-          dist_coeff: [0,0,0,0,0]
-          tvec: [0,0,0]
-          rvec: [ 0.61394313, -0.61394313, 1.48218982]
     ```
+
+### Acknowledgments 
+
+- All background images are in the public domain (CC0 license) and were sourced from [polyhaven.com](https://polyhaven.com/) 
+- The crazyflie model used is under an MIT license and was modified and sourced from [https://github.com/bitcraze/crazyflie-simulation](https://github.com/bitcraze/crazyflie-simulation)
+
