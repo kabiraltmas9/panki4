@@ -126,6 +126,8 @@ class Visualization:
             # set positions
             self.cf_list[idx].location = np.array(state.pos)
 
+
+        self.tvecs = np.zeros((self.n, 3))
         for name in names:
             os.mkdir(self.path + "/" + name + "/")  # create dir for every cf for saving images
             csf = f"{self.path}/{name}/{name}.csv"
@@ -137,12 +139,13 @@ class Visualization:
                 file.write("image_name,timestamp,x,y,z,qw,qx,qy,qz\n")
             if name in self.cf_cameras:
                 calibration = self.cf_cameras[name]["calibration"]
-                calibration["tvec"] = np.zeros(3).tolist()
                 calibration["dist_coeff"] = np.zeros(5).tolist()
                 calibration["camera_matrix"] = np.array([[170.0,0,160.0], [0,170.0,160.0],[0,0,1]]).tolist()
                 with open(calibration_sf, "w") as file:
                     yaml.dump(calibration, file)
-                rvec = np.array(calibration["rvec"])
+                rvec = np.array(calibration["rvec"]) if "rvec" in calibration else np.array([1.2092, -1.2092, 1.2092])
+                tvec = np.array(calibration["tvec"]) if "tvec" in calibration else np.zeros(3)
+                self.tvecs[self.names_idx_map[name]] = tvec
                 q_real_camera_to_robot = rw.inverse(opencv2quat(rvec))
                 q_virtual_camera_to_real_camera = rw.from_euler(np.pi, 0, 0, "xyz")
                 self.Q_virt_cf_cam[self.names_idx_map[name]] = rw.multiply(q_real_camera_to_robot, q_virtual_camera_to_real_camera)
@@ -188,7 +191,7 @@ class Visualization:
                 self.camera.rotation_quaternion = rw.multiply(Q[idx], self.Q_virt_cf_cam[idx])
                 self.lamp.rotation_quaternion = self.camera.rotation_quaternion
                 # positions
-                p_cam = P[idx] ### + rw.to_matrix(Q[idx]) @ np.array([0.025, 0.0, 0.01])  # uncomment in case cf's camera has a constant offset wrt its cf
+                p_cam = P[idx] + rw.to_matrix(Q[idx]) @ self.tvecs[idx]
                 self.camera.location = p_cam
                 self.lamp.location = p_cam
                 # hide corresponding cf for rendering

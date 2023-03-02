@@ -31,7 +31,7 @@
     ```
     where `<name>.csv` contains the states in world coordinates of the camera or crazyflie, `calibration.yaml` contains the calibration information of the cameras and 
     `<name>_<frame>.jpg` is the `<frame>`th image taken from `<names>`'s perspective. If a robot is configured to not carry a camera, only `<name>.csv` will be recorded. 
-- In order to use it, you need to add `blender` to the list of visualizations in `crazyswarm2/crazyflie/config/server.yaml` and run 
+- In order to use it, you need to add `blender` to the list of visualizations in `crazyflie/config/server.yaml` and run 
 
     ```sh
     ros2 launch crazyflie launch.py backend:=sim
@@ -46,11 +46,15 @@
         - `radps: float`, radians per second
     * for every robot in `cf_cameras`:
         - `calibration`
-            * `camera_matrix: list[float]`, camera matrix as list in row-major order
-            * `dist_coeff: list[float]` (has no effect at the moment, defaults to $(0,0,0,0,0)^\top$)
-            * `tvec: list[float]` (has no effect at the moment, defaults to $(0,0,0)^\top$)
-            * `rvec: list[float]` 
-- Example configuration  
+            * `tvec: list[float]` translation vector of camera wrt. robot
+            * `rvec: list[float]` rotation vector of camera wrt. robot (for camera +Z is front and +Y is up)  
+
+            > **Note**
+            > 1. The camera matrix $\mathbf K$ is set internally to be close to a real crazyflie's as possible.
+            > It is given (in row-major order) by $$\mathbf  K = \left[ [170, 0, 160], [0, 170, 160], [0, 0, 1] \right].$$
+            > 2. The distortion coefficient is set to $\left(0, 0, 0, 0, 0\right)^\top $
+
+- Example configuration
 
     ```yaml
     blender:
@@ -63,23 +67,19 @@
       cf_cameras:      # names of crazyflies with cameras on them if enabled in `crazyflies.yaml`
         cf231:
           calibration:
-            camera_matrix: [170.0, 0.0, 160.0, 0.0, 170.0, 160.0, 0.0, 0.0, 1.0] # matrix in row-major order
-            dist_coeff: [0,0,0,0,0]
             tvec: [0,0,0]
             rvec: [1.2092,-1.2092,1.2092]   # 0 deg tilt
         cf5:
           calibration:
-            camera_matrix: [170.0, 0.0, 160.0, 0.0, 170.0, 160.0, 0.0, 0.0, 1.0] # matrix in row-major order
-            dist_coeff: [0,0,0,0,0]
             tvec: [0,0,0]
             rvec: [ 0.61394313, -0.61394313,  1.48218982]   # 45 deg tilt
         cf6:
           calibration:
-            camera_matrix: [170.0, 0.0, 160.0, 0.0, 170.0, 160.0, 0.0, 0.0, 1.0] # matrix in row-major order
-            dist_coeff: [0,0,0,0,0]
             tvec: [0,0,0]
             rvec: [0.0,0.0,1.5707963267948966]    # 90 deg tilt
     ```
+
+- For efficiently generating synthetic images, we recommend setting the backend `none` in `crazyflie/config/server.yaml` 
 
 ### Acknowledgments 
 
