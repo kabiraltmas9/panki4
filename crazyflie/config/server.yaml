@@ -12,9 +12,6 @@
           output_file: "result.pdf"
         blender:
           enabled: false
-          auto_yaw:     # constant yaw rotation applied to cf_cameras only
-            enabled: true
-            radps: 5   # radians per second
           fps: 1           # frames per second
           cycle_bg: false  # if true, pictures will cycle through different environemt background images (useful for synthetic image generation). Otherwise a single environment background image will be used
           cf_cameras:      # names of crazyflies with cameras on them if enabled in `crazyflies.yaml`

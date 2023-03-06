@@ -4,6 +4,7 @@ import os
 import datetime
 import rowan as rw
 import yaml
+from pathlib import Path
 from rclpy.node import Node
 from ..sim_data_types import State, Action
 
@@ -31,21 +32,26 @@ class Visualization:
         world.use_nodes = True
         background_paths = [""]
         self.env = world.node_tree.nodes.new("ShaderNodeTexEnvironment")
-        for subdir, dirs, files in os.walk("src/crazyswarm2/crazyflie_sim/data/env"):
-            bg_paths = [os.path.join(subdir, file) for file in files]
         if params["cycle_bg"]:
+            bg_paths = []
+            p = Path(__file__).resolve().parent / "data/env"
+            print(p)
+            for subdir, dirs, files in os.walk(p):
+                bg_paths.extend([os.path.join(subdir, file) for file in files])
             self.cycle_bg = True
             self.bg_idx = 0
             self.bg_imgs = [bpy.data.images.load(bgp) for bgp in bg_paths]
+            print(self.bg_imgs)
+            print(bg_paths)
             self.env.image = self.bg_imgs[self.bg_idx]
         else:
             self.cycle_bg = False
-            self.env.image = bpy.data.images.load("src/crazyswarm2/crazyflie_sim/data/env/env.jpg")
+            self.env.image = bpy.data.images.load(Path(__file__).resolve().parent / "data/env/env.jpg")
         node_tree = world.node_tree
         node_tree.links.new(self.env.outputs["Color"], node_tree.nodes["Background"].inputs["Color"])
 
         # import crazyflie object 
-        bpy.ops.import_scene.obj(filepath="src/crazyswarm2/crazyflie_sim/data/model/cf.obj", axis_forward="Y", axis_up="Z")
+        bpy.ops.import_scene.obj(filepath=f"{Path(__file__).resolve().parent}/data/model/cf.obj", axis_forward="Y", axis_up="Z")
         self.cf_default = bpy.data.objects["cf"]
         # save scene
         self.scene = bpy.context.scene
@@ -88,16 +94,12 @@ class Visualization:
         self.lamp.rotation_mode = "QUATERNION"
 
         base = "simulation_results"  
-        self.path = base + "/" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S") + "/Raw-Dataset"
+        self.path = base + "/" + datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S") + "/"
         os.makedirs(self.path, exist_ok=True) 
 
         self.ts = []
         self.frame = 0
         self.fps = params["fps"]    # frames per second
-
-        self.auto_yaw = params["auto_yaw"]["enabled"] if "auto_yaw" in params else False 
-        if self.auto_yaw:
-            self.radps = params["auto_yaw"]["radps"]
 
         self.names = names
         self.n = len(names)
@@ -164,7 +166,7 @@ class Visualization:
             # first put everything in place and record cfs's states
             for name, state in zip(self.names, states):
                 idx = self.names_idx_map[name]
-                Q[idx] = np.array(state.quat) if not self.auto_yaw else rw.multiply(rw.from_euler(self.radps*t,0,0), np.array(state.quat))
+                Q[idx] = np.array(state.quat)
                 P[idx] = np.array(state.pos) 
 
                 # set rotations

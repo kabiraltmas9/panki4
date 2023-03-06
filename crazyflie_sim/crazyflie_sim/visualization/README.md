@@ -11,23 +11,24 @@
 
 ### Output
 - Takes pictures from robots' perspectives
-- Saves pictures in working directory in `simulation_results/<date-and-time>/Raw-Dataset` with the following folder structure
+- Saves pictures in working directory in `simulation_results/<date-and-time>` with the following folder structure
 
     ```
-    Raw-Dataset
-    ├── cf1
-    │   ├── calibration.yaml
-    │   ├── cf0.csv
-    │   ├── cf0_00000.jpg
-    │   ├── cf0_00001.jpg
-    │   └── ...
-    ├── ...
-    └── cfn
-        ├── calibration.yaml
-        ├── cfn.csv
-        ├── cfn_00000.jpg
-        ├── cfn_00001.jpg
-        └── ...
+    simulation_results
+    └── <date-and-time>
+        ├── cf1
+        │   ├── calibration.yaml
+        │   ├── cf0.csv
+        │   ├── cf0_00000.jpg
+        │   ├── cf0_00001.jpg
+        │   └── ...
+        ├── ...
+        └── cfn
+            ├── calibration.yaml
+            ├── cfn.csv
+            ├── cfn_00000.jpg
+            ├── cfn_00001.jpg
+            └── ...
     ```
     where `<name>.csv` contains the states in world coordinates of the camera or crazyflie, `calibration.yaml` contains the calibration information of the cameras and 
     `<name>_<frame>.jpg` is the `<frame>`th image taken from `<names>`'s perspective. If a robot is configured to not carry a camera, only `<name>.csv` will be recorded. 
