@@ -20,10 +20,10 @@ jobs:
           cd ros2_ws/src
           git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
       - name: Checkout Crazyswarm2
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ros2_ws/src/crazyswarm2
-          submodules: true
+          submodules: 'recursive'
       - name: Build workspace
         run: |
           source /opt/ros/humble/setup.bash
