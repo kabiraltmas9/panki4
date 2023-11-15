@@ -10,15 +10,29 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v2
-      - name: build and test ROS 2
-        uses: ros-tooling/action-ros-ci@v0.3
+      - name: Create workspace
+        run: mkdir -p ros2_ws/src
+      - name: Checkout motion capture package
+        run: |
+          cd ros2_ws/src
+          git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
+      - name: Checkout Crazyswarm2
+        uses: actions/checkout@v2
         with:
-          package-name: |
-            crazyflie
-            crazyflie_examples
-            crazyflie_interfaces
-            crazyflie_py
-            crazyflie_sim
-          target-ros2-distro: humble
-          vcs-repo-file-url: rosinstall
+          path: ros2_ws/src
+      - name: Build workspace
+        run: |
+          cd ros2_ws
+          colcon build --symlink-install
+
+      # - name: build and test ROS 2
+      #   uses: ros-tooling/action-ros-ci@v0.3
+      #   with:
+      #     package-name: |
+      #       crazyflie
+      #       crazyflie_examples
+      #       crazyflie_interfaces
+      #       crazyflie_py
+      #       crazyflie_sim
+      #     target-ros2-distro: humble
+      #     vcs-repo-file-url: rosinstall
