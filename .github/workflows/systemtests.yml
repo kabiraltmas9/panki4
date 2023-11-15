@@ -2,7 +2,7 @@ name: System Tests
 
 on:
   push:
-    branches: [ "main", "feature_systemtests" ]
+    branches: [ "feature_systemtests" ]
   # manual trigger
   workflow_dispatch:
 
