@@ -15,7 +15,7 @@ if __name__ == "__main__":
     launch_crazyswarm = Popen(command, shell=True, stderr=True, 
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)   
     time.sleep(3)
-    bagname = 'bag_' + datetime.now().strftime('%d_%m_%Y-%H:%M:%S')
+    bagname = 'bag_' + datetime.now().strftime('%d_%m_%Y-%H_%M_%S')
     command = f"mkdir bagfiles && cd bagfiles && ros2 bag record -s mcap -o {bagname} /tf"
     start_rosbag =  Popen(command, shell=True, stderr=True, 
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid) 
