@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     rosbag_csv = output_csv
 
-    test_file = "src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/figure8.csv"
+    test_file = "../crazyflie_examples/crazyflie_examples/data/figure8.csv"
     paul = Plotter()
     paul.create_figures(test_file, rosbag_csv, output_pdf)
 
