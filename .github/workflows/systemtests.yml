@@ -18,7 +18,7 @@ jobs:
       - name: Checkout motion capture package
         run: |
           cd ros2_ws/src
-          git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
+          ls motion_capture_tracking || git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
       - name: Checkout Crazyswarm2
         uses: actions/checkout@v4
         with:
