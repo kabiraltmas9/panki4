@@ -32,7 +32,14 @@ jobs:
 
       - name: Flight test
         run: |
+          cd ros2_ws
           python3 src/crazyswarm2/systemtests/newsub.py
+
+      - name: Upload files
+        uses: actions/upload-artifact@v3
+        with:
+          name: bagfiles
+          path: ros2_ws/bagfiles/
 
       # - name: build and test ROS 2
       #   uses: ros-tooling/action-ros-ci@v0.3
