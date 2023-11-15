@@ -13,6 +13,7 @@ jobs:
       - name: Create workspace
         run: |
           pwd
+          rm -rf ros2_ws
           mkdir -p ros2_ws/src
       - name: Checkout motion capture package
         run: |
