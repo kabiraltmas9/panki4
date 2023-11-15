@@ -33,6 +33,9 @@ jobs:
       - name: Flight test
         run: |
           cd ros2_ws
+          source /opt/ros/humble/setup.bash
+          . install/local_setup.bash
+          export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/newsub.py
 
       - name: Upload files
