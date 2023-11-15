@@ -21,7 +21,7 @@ jobs:
       - name: Checkout Crazyswarm2
         uses: actions/checkout@v2
         with:
-          path: ros2_ws/src
+          path: ros2_ws/src/crazyswarm2
       - name: Build workspace
         run: |
           cd ros2_ws
