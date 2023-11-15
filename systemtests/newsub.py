@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     writer.write_mcap_to_csv(inputbag, output_csv)
 
-    output_pdf = "bagfiles/" + bagname + '/' + 'Results_'+ datetime.now().strftime('%d_%m_%Y-%H:%M:%S')
+    output_pdf = "bagfiles/" + bagname + '/' + 'Results_'+ datetime.now().strftime('%d_%m_%Y-%H_%M_%S')
 
     rosbag_csv = output_csv
 
