@@ -30,6 +30,10 @@ jobs:
           cd ros2_ws
           colcon build --symlink-install
 
+      - name: Flight test
+        run: |
+          python3 src/crazyswarm2/systemtests/newsub.py
+
       # - name: build and test ROS 2
       #   uses: ros-tooling/action-ros-ci@v0.3
       #   with:
