@@ -3,7 +3,7 @@ from subprocess import Popen
 import time
 import os
 import signal
-from systemtests.mcap_handler import McapHandler
+from mcap_handler import McapHandler
 from datetime import datetime
 from plotter_class import Plotter
 
