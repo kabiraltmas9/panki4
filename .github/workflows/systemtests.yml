@@ -44,14 +44,7 @@ jobs:
             ros2_ws/bagfiles
             ros2_ws/results
             .ros/log
-          name:
-          path: ros2_ws/bagfiles
-        with:
-          name: results
-          path: ros2_ws/results/
-        with: 
-          name: logs
-          path: .ros/log/
+
 
 
       
