@@ -9,12 +9,10 @@ on:
 jobs:
   build:
     runs-on: self-hosted
-    steps:
+    steps:test_file, rosbag_csv, output_pdf
       - name: Create workspace
         run: |
-          pwd
-          rm -rf ros2_ws
-          mkdir -p ros2_ws/src
+          cd ros2_ws/src || mkdir -p ros2_ws/src
       - name: Checkout motion capture package
         run: |
           cd ros2_ws/src
@@ -41,8 +39,22 @@ jobs:
       - name: Upload files
         uses: actions/upload-artifact@v3
         with:
-          name: bagfiles
-          path: ros2_ws/bagfiles/
+          name: pdf_logs_bagfiles
+          path: |
+            ros2_ws/bagfiles
+            ros2_ws/results
+            .ros/log
+          name:
+          path: ros2_ws/bagfiles
+        with:
+          name: results
+          path: ros2_ws/results/
+        with: 
+          name: logs
+          path: .ros/log/
+
+
+      
 
       # - name: build and test ROS 2
       #   uses: ros-tooling/action-ros-ci@v0.3

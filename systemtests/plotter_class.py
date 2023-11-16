@@ -1,25 +1,14 @@
-
-# import cfusdlog
 import matplotlib.pyplot as plt
 import os
 import sys 
-import yaml
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
-
-# import model  #dennis module
-
-#my stuff
 from crazyflie_py.uav_trajectory import Trajectory
-from pathlib import Path
-import pandas as pd
-from mcap_read_write import McapHandler
-from mpl_toolkits.mplot3d import Axes3D
+
 
 class Plotter:
 
     def __init__(self):
-        self.output_dir = ''
         self.params = {'experiment':'1','trajectory':'figure8.csv','motors':'standard motors(CF)', 'propellers':'standard propellers(CF)'}
         self.bag_times = np.empty([0])
         self.bag_x = np.empty([0])
@@ -29,7 +18,9 @@ class Plotter:
         self.ideal_traj_y = np.empty([0])
         self.ideal_traj_z = np.empty([0])
         self.euclidian_dist = np.empty([0])
+        self.deviation = [] #list of all indexes where euclidian_distance(ideal - recorded) > EPSILON
 
+        self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. This should be implemented better later
         self.ALTITUDE_CONST_FIG8 = 0.5 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
@@ -55,7 +46,6 @@ class Plotter:
         '''Method that reads the csv data of the ideal test trajectory and of the actual recorded trajectory and initializes the attribute arrays'''
 
         #check which test we are plotting : figure8 or multi_trajectory
-
         if("fig8" in rosbag_csvfile):
             fig8 = True
             print("Plotting fig8 test data")
@@ -66,21 +56,20 @@ class Plotter:
         #get ideal trajectory data
         self.ideal_traj_csv = Trajectory()
         try:
-            self.ideal_traj_csv.loadcsv(Path(__file__).parent / ideal_csvfile,)
+            path_to_ideal_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)),ideal_csvfile)
+            self.ideal_traj_csv.loadcsv(path_to_ideal_csv)
         except FileNotFoundError:
-            print("Plotter : File not found " + str(Path(__file__).parent / ideal_csvfile,))
+            print("Plotter : File not found " + path_to_ideal_csv)
             exit(1)
 
 
         #get rosbag data
-        rosbag_data = pd.read_csv(rosbag_csvfile, names=['time','x','y','z'])
+        rosbag_data = np.loadtxt(rosbag_csvfile, delimiter=",")
         
-
-        #we have to split the pandas dataframe into separate numpy arrays to plot them later
-        self.bag_times = rosbag_data['time'].to_numpy()
-        self.bag_x = rosbag_data['x'].to_numpy()
-        self.bag_y = rosbag_data['y'].to_numpy()
-        self.bag_z = rosbag_data['z'].to_numpy()
+        self.bag_times = np.array(rosbag_data[:,0])
+        self.bag_x = np.array(rosbag_data[:,1])
+        self.bag_y = np.array(rosbag_data[:,2])
+        self.bag_z = np.array(rosbag_data[:,3])
     
         self.adjust_arrays()
         bag_arrays_size = len(self.bag_times)
@@ -112,9 +101,10 @@ class Plotter:
 
             self.euclidian_dist[i] = np.linalg.norm([self.ideal_traj_x[i]-self.bag_x[i], 
                                                 self.ideal_traj_y[i]-self.bag_y[i], self.ideal_traj_z[i]-self.bag_z[i]])
+            if self.euclidian_dist[i] > self.EPSILON:
+                self.deviation.append(i)
             
         self.no_match_warning(no_match_in_idealcsv)
-
 
 
     def no_match_warning(self, unmatched_values:list):
@@ -192,17 +182,18 @@ class Plotter:
 
 
 
-    def create_figures(self, ideal_csvfile:str, rosbag_csvfile:str, pdfname_and_path:str):
+    def create_figures(self, ideal_csvfile:str, rosbag_csvfile:str, pdfname:str):
         '''Method that creates the pdf with the plots'''
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
         
         #create PDF to save figures
-        pdf_path = self.output_dir + pdfname_and_path + '.pdf'
+        if(pdfname[-4:] != ".pdf"):
+            pdfname= pdfname + '.pdf'
 
         #check if user wants to overwrite the report file
-        # self.file_guard(pdf_path)
-        pdf_pages = PdfPages(pdf_path)
+        self.file_guard(pdfname)
+        pdf_pages = PdfPages(pdfname)
 
         #create title page
         text = 'figure8 trajectory test'
@@ -217,10 +208,8 @@ class Plotter:
         fig.text(0.1, 0.1, title_text, size=11)
         pdf_pages.savefig(fig)
     
-       
-        #plt.style.use('ggplot')
    
-         #create plots
+        #create plots
         fig, ax = plt.subplots()
         ax.plot(self.bag_times, self.ideal_traj_x, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax.plot(self.bag_times, self.bag_x, label='Recorded trajectory')
@@ -303,56 +292,40 @@ class Plotter:
 
 
 
-
-
         pdf_pages.close()
-        print("Result saved in " + pdfname_and_path + '.pdf')
 
-    
-    # def create_pdf(self, ideal_csvfile:str, rosbag:str, pdfname_and_path:str):
-    #     pdf_pages = PdfPages(self.output_dir + pdfname_and_path + '.pdf')
+        self.test_passed()
 
+        print("Results saved in " + pdfname)
 
-    #     fig8_ideal_csv = "/home/jthevenoz/ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/figure8.csv"
+    def test_passed(self) -> bool :
+        '''Returns True if the deviation between recorded and ideal trajectories of the drone always stayed lower 
+        than EPSILON. Returns False otherwise '''
 
-    #     index = rosbag.find("bag_")
-    #     bagname = rosbag[index:] 
-    #     print(bagname)
-    #     fig8_recorded_csv_filepath = rosbag + "fig8_" + bagname + "fig8_" + bagname[:bagname.index("/")] + "_0.mcap"
-    #     print(fig8_recorded_csv_filepath)
+        nb_dev_points = len(self.deviation)
 
-
-    
-    #     create_figures(fig8_recorded_csv_filepath,fig8_ideal_csv)
-
-    #     multitraj_ideal_csv = "/home/julien/ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-    #     create_figure(multitraj_ideal_csv)
-
-    #     pdf_pages.close()
-    #     print("Result saved in " + pdfname_and_path + '.pdf')
-
-
+        if nb_dev_points == 0:
+            print("Test passed")
+            return True
+        else:
+            print(f"The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {nb_dev_points}"
+                  f"datapoints, which corresponds to {nb_dev_points*0.01}s")
+            return False
 
 if __name__=="__main__":
-    #####writing rosbag to csv
-    # writer = McapHandler()
-    # path = str(Path(__file__).parent /"bags/tfbag.mcap")
-    # writer.write_bag_to_csv(path, "tf_rosbag.csv")
+    
+    #command line utility 
 
+    from argparse import ArgumentParser, Namespace
+    parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
+    parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
+    parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
+    parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
+    parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
+    args : Namespace = parser.parse_args()
 
-
-    # ideal_csv  =  "/home/jthevenoz/ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/figure8.csv"
-    # rosbagcsv = "/home/jthevenoz/ros2_ws/bagfiles/bag_06_11_2023-17:11:23/bag_06_11_2023-17:11:23_0.csv"
-    # pdf = "/home/jthevenoz/ros2_ws/bagfiles/bag_06_11_2023-17:11:23/testingtheclass"
-
-    ideal_csv_multi = "/home/julien/ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-    ideal_csv_fig8 = "/home/julien/ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data/figure8.csv"
-    rosbagcsv_multi = "/home/julien/Desktop/IMRC/IMRC-shared/bags/multibag/multibag_0.csv"
-    rosbagcsv_fig8 = "/"
-    pdf = "/home/julien/Desktop/IMRC/IMRC-shared5/bags/multibag/multitesting"
-
-    paul = Plotter()
-    paul.create_figures(ideal_csv_multi,rosbagcsv_multi, pdf)
-    import subprocess
-    ####directly open the pdf is nice
-    subprocess.call(["xdg-open", "/home/julien/Desktop/IMRC/IMRC-shared/bags/multibag/multitesting.pdf"])
+    plotter = Plotter()
+    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf)
+    if args.open:
+        import subprocess
+        subprocess.call(["xdg-open", args.pdf])

@@ -33,6 +33,9 @@ class McapHandler:
         del reader
     
     def write_mcap_to_csv(self, inputbag:str, outputfile:str):
+        '''A method which translates an .mcap rosbag file format to a .csv file. 
+        Only written to translate the /tf topic but could easily be extended to other topics'''
+
         try:
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
@@ -48,6 +51,14 @@ class McapHandler:
 
 
 if __name__ == "__main__":
-    yo =  McapHandler()
-    # # yo.write_mcap_to_csv('Home/julien/ros2_ws/bagfiles/bag_06_11_2023-17:11:23/bag_06_11_2023-17:11:23_0.mcap','Home/julien/ros2_ws/bagfiles/bag_06_11_2023-17:11:23/bag_06_11_2023-17:11:23_0.csv')
-    yo.write_mcap_to_csv('/home/julien/Desktop/IMRC/IMRC-shared/bags/multibag/multibag_0.mcap','/home/julien/Desktop/IMRC/IMRC-shared/bags/multibag/multibag_0.csv')
+
+    #command line utility 
+
+    from argparse import ArgumentParser, Namespace
+    parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
+    parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
+    parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
+    args:Namespace = parser.parse_args()
+
+    translator =  McapHandler()
+    translator.write_mcap_to_csv(args.inputbag,args.outputfile)
