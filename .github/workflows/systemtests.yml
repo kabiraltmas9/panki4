@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: self-hosted
-    steps:test_file, rosbag_csv, output_pdf
+    steps:
       - name: Create workspace
         run: |
           cd ros2_ws/src || mkdir -p ros2_ws/src
