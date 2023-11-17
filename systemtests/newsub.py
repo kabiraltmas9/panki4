@@ -19,7 +19,7 @@ if __name__ == "__main__":
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)   
     time.sleep(1)
     command = f"mkdir results && mkdir bagfiles && mkdir bagfiles/{bagname}"
-    create_dirs = Popen(command, shell=True, stderr=True, cwd = f"home/GithubActions/ros2_ws",
+    create_dirs = Popen(command, shell=True, stderr=True, cwd = f"/home/GithubActions/ros2_ws",
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid) 
 
     command = f"ros2 bag record -s mcap -o {f8_bagname} /tf"
