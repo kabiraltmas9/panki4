@@ -13,31 +13,32 @@ if __name__ == "__main__":
     bagname = 'bag_' + datetime.now().strftime('%d_%m_%Y-%H_%M_%S')
     f8_bagname = "fig8_" + bagname
     mt_bagname = "multitraj_" + bagname
+    src = "source install/setup.bash"
 
-    command = "source install/setup.bash && ros2 launch crazyflie launch.py"
+    command = f"{src} && ros2 launch crazyflie launch.py"
     launch_crazyswarm = Popen(command, shell=True, stderr=True, 
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)   
     time.sleep(1)
     command = f"mkdir results && mkdir bagfiles && mkdir bagfiles/{bagname}"
-    create_dirs = Popen(command, shell=True, stderr=True, cwd = f"/home/GithubActions/ros2_ws",
+    create_dirs = Popen(command, shell=True, stderr=True, cwd = f"/home/github/ros2_ws",
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid) 
 
-    command = f"ros2 bag record -s mcap -o {f8_bagname} /tf"
-    record_fig8_bag =  Popen(command, shell=True, stderr=True, cwd=f"/home/GithubAction/ros2_ws/bagfiles/{bagname}",
+    command = f"{src} && ros2 bag record -s mcap -o {f8_bagname} /tf"
+    record_fig8_bag =  Popen(command, shell=True, stderr=True, cwd=f"/home/github/ros2_ws/bagfiles/{bagname}",
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid) 
     
-    command = "ros2 run crazyflie_examples figure8"
+    command = f"{src} && ros2 run crazyflie_examples figure8"
     start_fig8 = Popen(command, shell=True, stderr=True, 
                        stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
     time.sleep(20)
     os.killpg(os.getpgid(start_fig8.pid), signal.SIGTERM)  #kill figure8 flight process and all of its child processes
     os.killpg(os.getpgid(record_fig8_bag.pid), signal.SIGTERM) #kill rosbag figure8
 
-    command = f"ros2 bag record -s mcap -o {mt_bagname} /tf"
+    command = f"{src} && ros2 bag record -s mcap -o {mt_bagname} /tf"
     record_multitraj_bag = Popen(command, shell=True, stderr=True, 
                        stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
     
-    command = "ros2 run crazyflie_examples multi_trajectory"
+    command = f"{src} && ros2 run crazyflie_examples multi_trajectory"
     start_multitraj = Popen(command, shell=True, stderr=True, 
                        stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
     time.sleep(80)
