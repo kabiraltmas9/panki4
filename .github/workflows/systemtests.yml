@@ -39,11 +39,16 @@ jobs:
       - name: Upload files
         uses: actions/upload-artifact@v3
         with:
-          name: pdf_logs_bagfiles
+          name: pdf_and_bagfiles
           path: |
             ros2_ws/bagfiles
             ros2_ws/results
-            .ros/log
+
+      - name : Upload logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs
+          path: /home/github/.ros/log
 
 
 
