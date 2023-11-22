@@ -157,12 +157,12 @@ class Plotter:
                 break
             i+=1
 
-        assert (takeoff_index != None) and (landing_index != None), "couldn't find drone takeoff or landing"
+        assert (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
 
 
         ####get rid of datapoints before takeoff and after landing in bag_times, bag_x, bag_y, bag_y   
 
-        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "self.bag_* aren't the same size before trimming"
+        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size before trimming"
         index_arr = np.arange(len(self.bag_times))
         slicing_arr = np.delete(index_arr, index_arr[takeoff_index:landing_index+1])  #in our slicing array we take out all the indexes of when the drone is in flight so that it only contains the indexes of when the drone is on the ground
 
@@ -172,7 +172,7 @@ class Plotter:
         self.bag_y = np.delete(self.bag_y, slicing_arr)
         self.bag_z = np.delete(self.bag_z, slicing_arr)
 
-        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "self.bag_* aren't the same size after trimming"
+        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after trimming"
 
         #rewrite bag_times to start at 0 and be written in [s] instead of [ns]
         bag_start_time = self.bag_times[0]
