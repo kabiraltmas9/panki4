@@ -308,8 +308,8 @@ class Plotter:
             print("Test passed")
             return True
         else:
-            print(f"The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {nb_dev_points}"
-                  f"datapoints, which corresponds to {nb_dev_points*0.01}s")
+            print(f"The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {nb_dev_points} "
+                  f"datapoints, which corresponds to a duration of {nb_dev_points*0.01}s")
             return False
 
 if __name__=="__main__":
