@@ -24,26 +24,27 @@ if __name__ == "__main__":
     os.makedirs(path.parents[3].joinpath("results"), exist_ok=True)  # /home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/results
     
    
-    print('launch cswarm')
+ 
     command = f"{src} && ros2 launch crazyflie launch.py"
     launch_crazyswarm = Popen(command, shell=True, stderr=True, 
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)   
     time.sleep(1)
 
 
-    print('rosbag f8')
+
     command = f"{src} && ros2 bag record -s mcap -o {f8_bagname} /tf"
     record_fig8_bag =  Popen(command, shell=True, stderr=True, cwd=bagfolder,
                             stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid) 
 
     
-    print('run f8')
+
     command = f"{src} && ros2 run crazyflie_examples figure8"
     start_fig8 = Popen(command, shell=True, stderr=True, 
                        stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
     
-    print('wait 20')
-    #wait, startf8 and start_mt and the while loop are there to make keyboard interrupting still 
+
+    #wait, startf8 and start_mt and the while loop are there to allow us to ^C during flightest (zB if the drone crashes) but still kill all child processes
+    #they could be removed if we don't have humans overlooking the test
     wait=True
     startf8=time.time()
     while wait and time.time()<(startf8+20):
@@ -51,20 +52,20 @@ if __name__ == "__main__":
             time.sleep(1)
         except KeyboardInterrupt:
             wait = False
+
     os.killpg(os.getpgid(start_fig8.pid), signal.SIGTERM)  #kill figure8 flight process and all of its child processes
     os.killpg(os.getpgid(record_fig8_bag.pid), signal.SIGTERM) #kill rosbag figure8
 
-    print('rosbag mt')
+
     command = f"{src} && ros2 bag record -s mcap -o {mt_bagname} /tf"
     record_multitraj_bag = Popen(command, shell=True, stderr=True, cwd = bagfolder,
-                       stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
-    print('run mt')
+                       stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)  
+
     command = f"{src} && ros2 run crazyflie_examples multi_trajectory"
     start_multitraj = Popen(command, shell=True, stderr=True, 
                        stdout=True, text=True, executable="/bin/bash", preexec_fn=os.setsid)    
     
 
-    print('wait 80')
     start_mt = time.time()
     while wait and time.time()<(start_mt+80):
         try:
