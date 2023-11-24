@@ -22,7 +22,7 @@ class Plotter:
 
         self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. This should be implemented better later
-        self.ALTITUDE_CONST_FIG8 = 0.5 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
+        self.ALTITUDE_CONST_FIG8 = 0.4 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
 
     def file_guard(self, pdf_path):
