@@ -2,7 +2,7 @@
 robots:
   cf231:
     enabled: true
-    uri: radio://0/60/2M/E7E7E7E7E7
+    uri: radio://0/8s0/2M/E7E7E7E7E7
     initial_position: [0, 0, 0]
     type: cf21  # see robot_types
     # firmware_params:

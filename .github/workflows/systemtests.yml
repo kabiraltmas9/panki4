@@ -45,17 +45,11 @@ jobs:
         id: step6
         uses: actions/upload-artifact@v3
         with:
-          name: pdf_and_bagfiles
+          name: pdf_bagfiles_and_logs
           path: |
             ros2_ws/bagfiles
             ros2_ws/results
-
-      - name : Upload logs
-        id: step7
-        uses: actions/upload-artifact@v3
-        with:
-          name: logs
-          path: /home/github/.ros/log
+            /home/github/.ros/log
 
 
 

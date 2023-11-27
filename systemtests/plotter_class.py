@@ -22,7 +22,7 @@ class Plotter:
 
         self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. This should be implemented better later
-        self.ALTITUDE_CONST_FIG8 = 0.4 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
+        self.ALTITUDE_CONST_FIG8 = 1.0 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
 
     def file_guard(self, pdf_path):
@@ -187,6 +187,10 @@ class Plotter:
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
         
+        passed="failed"
+        if self.passed():
+            passed = "passed"
+        
         #create PDF to save figures
         if(pdfname[-4:] != ".pdf"):
             pdfname= pdfname + '.pdf'
@@ -196,16 +200,26 @@ class Plotter:
         pdf_pages = PdfPages(pdfname)
 
         #create title page
-        text = 'figure8 trajectory test'
+        if "figure8" in ideal_csvfile:
+            name = "Figure8"
+        elif "multitrajectory" in ideal_csvfile:
+            name = "Multi_trajectory"
+        else:
+            name = "Unnamed test"
+            print("Plotter : test name not defined")
+
+        text = f'{name} trajectory test'
         title_text_settings = f'Settings:\n'
         title_text_parameters = f'Parameters:\n'
         for key, value in self.params.items():
             title_text_parameters += f"    {key}: {value}\n"
-        title_text_results = f'Results:\n' + f'max error : '
+        title_text_results = f'Results: test {passed}\n' + f'max error : '
 
         title_text = text + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
         fig = plt.figure(figsize=(5,8))
         fig.text(0.1, 0.1, title_text, size=11)
+    
+
         pdf_pages.savefig(fig)
     
    
@@ -293,8 +307,6 @@ class Plotter:
 
 
         pdf_pages.close()
-
-        self.test_passed()
 
         print("Results saved in " + pdfname)
 
