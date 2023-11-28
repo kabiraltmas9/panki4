@@ -3,5 +3,3 @@ crazyswarm2_sim_webots/
 *.pyc
 *.o
 *~
-.vscode/
-experiments.py
