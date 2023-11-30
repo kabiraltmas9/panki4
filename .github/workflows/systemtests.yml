@@ -49,7 +49,7 @@ jobs:
           path: |
             ros2_ws/bagfiles
             ros2_ws/results
-            /home/github/.ros/log
+            ~/.ros/log
 
 
 
