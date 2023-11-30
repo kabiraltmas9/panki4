@@ -188,7 +188,7 @@ class Plotter:
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
         
         passed="failed"
-        if self.passed():
+        if self.test_passed():
             passed = "passed"
         
         #create PDF to save figures

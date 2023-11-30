@@ -35,21 +35,14 @@ def record_start_and_terminate(testname:str, testduration:int, bagfolder:str):
     index = bagfolder.find("bag_")
     bagname = bagfolder[index:]
 
-    if "figure8" in testname:
-        bagname = "fig8_" + bagname
-    elif "multi_trajectory" in testname :
-        bagname = "multitraj_" + bagname
-    else:
-        print("run_test.py : test not defined")
-        return
     
     src = "source " + bagfolder[:index-9] + "install/setup.bash" # -> "source /home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/install/setup.bash"
     
-    command = f"{src} && ros2 bag record -s mcap -o {bagname} /tf"
+    command = f"{src} && ros2 bag record -s mcap -o {testname}_{bagname} /tf"
     record_bag =  Popen(command, shell=True, cwd=bagfolder, stderr=PIPE, stdout=True, 
                         start_new_session=True, text=True, executable="/bin/bash") 
 
-    command = f"{src} && ros2 run crazyflie_examples figure8"
+    command = f"{src} && ros2 run crazyflie_examples {testname}"
     start_flight_test = Popen(command, shell=True, stderr=True, stdout=True, 
                               start_new_session=True, text=True, executable="/bin/bash")
     
@@ -72,8 +65,8 @@ def translate_and_plot(testname:str, bagfolder:str):
     index = bagfolder.find("bag_")
     bagname = bagfolder[index:]
     # NB : the mcap filename is almost the same as the folder name but has _0 at the end
-    inputbag = str(bagfolder) + f"/{testname}_{bagname}_0.mcap"
-    output_csv = str(bagfolder) + f"/{testname}_{bagname}_0.csv"
+    inputbag = str(bagfolder) + f"/{testname}_{bagname}/{testname}_{bagname}_0.mcap"
+    output_csv = str(bagfolder) + f"/{testname}_{bagname}/{testname}_{bagname}_0.csv"
     writer = McapHandler()
     writer.write_mcap_to_csv(inputbag, output_csv)  #translate bag from mcap to csv
     output_pdf = str(path.parents[3].joinpath(f"results/Results_{testname}_"+ now +".pdf"))
