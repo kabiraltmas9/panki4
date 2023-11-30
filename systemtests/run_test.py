@@ -95,7 +95,7 @@ if __name__ == "__main__":
     #delete results, logs and bags of previous experiments
     shutil.rmtree(path.parents[3].joinpath("bagfiles"))
     shutil.rmtree(path.parents[3].joinpath("results"))
-    shutil.rmtree("~/.ros/log")
+    shutil.rmtree(Path.home() / ".ros/log")
 
 
     #create the folder where we will record the different bags and the folder where the results pdf will be saved
