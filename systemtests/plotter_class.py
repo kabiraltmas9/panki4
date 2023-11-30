@@ -202,7 +202,7 @@ class Plotter:
         #create title page
         if "figure8" in ideal_csvfile:
             name = "Figure8"
-        elif "multitrajectory" in ideal_csvfile:
+        elif "multi_trajectory" in ideal_csvfile:
             name = "Multi_trajectory"
         else:
             name = "Unnamed test"
