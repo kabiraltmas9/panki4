@@ -185,7 +185,7 @@ class Crazyflie:
         # self.cmdVelocityWorldMsg.header.frame_id = '/world'
 
     def setGroupMask(self, groupMask):
-        """Sets the group mask bits for this robot.
+        """Set the group mask bits for this robot.
 
         The purpose of groups is to make it possible to trigger an action
         (for example, executing a previously-uploaded trajectory) on a subset
@@ -203,6 +203,7 @@ class Crazyflie:
         but it is not especially useful in that case.
 
         Args:
+        ----
             groupMask (int): An 8-bit integer representing this robot's
                 membership status in each of the <= 8 possible groups.
         """
