@@ -14,8 +14,7 @@ import atexit
 
 def setUpModule():
 
-
-    path = Path(__file__)           #Path(__file__) in this case "/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/src/crazyswarm2/systemtests/newsub.py" ; path.parents[0]=.../systemstests
+    path = Path(__file__)           #Path(__file__) in this case "/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/src/crazyswarm2/systemtests/test_flights.py" ; path.parents[0]=.../systemstests
     
     #delete results, logs and bags of previous experiments if they exist
     if(Path(path.parents[3] / "results").exists()):
@@ -28,7 +27,7 @@ def tearDownModule():
 
 
 def clean_process(process:Popen) -> int :
-    '''Kills process and its children on exit if they aren't already terminated (called with atexit). Returns 0 on success, 1 on failure''' 
+    '''Kills process and its children on exit if they aren't already terminated (called with atexit). Returns 0 on termination, 1 if SIGKILL was needed''' 
     if process.poll() == None:
         group_id = os.getpgid(process.pid)
         print(f"cleaning process {group_id}")
@@ -40,8 +39,8 @@ def clean_process(process:Popen) -> int :
                 return 0  #if we have a returncode-> it terminated
             time.sleep(0.05) #if not wait a bit longer
         if(i == 9):
-            print(f"Process group {process} with groupID {group_id} didn't terminate correctly")
-            return 1  #after 0.5s we stop waiting and consider it did not terminate correctly
+            os.killpg(group_id, signal.SIGKILL)
+            return 1  #after 0.5s we stop waiting, consider it did not terminate correctly and kill it
         return 0
     else:
         return 0 #process already terminated
@@ -52,23 +51,20 @@ class TestFlights(unittest.TestCase):
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName)
         self.test_file = None
-        self.launch_crazyswarm : Popen = None #check this with Wolgang
+        self.launch_crazyswarm : Popen = None 
         self.ros2_ws = Path(__file__).parents[3] #/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws
 
     def idFolderName(self):
-        return self.id().split(".")[-1]
+        return self.id().split(".")[-1] #returns the name of the test_function currently being run, for example "test_figure8"
 
     # runs once per test_ function
     def setUp(self):
 
-        if(Path(Path.home() / ".ros/log").exists()):
+        if(Path(Path.home() / ".ros/log").exists()): #delete log files of the previous test
             shutil.rmtree(Path.home() / ".ros/log")
-        os.makedirs(Path(__file__).parents[3] / "results" / self.idFolderName())
-
         self.test_file = None
 
         # launch server
-
         src = "source " + str(Path(__file__).parents[3] / "install/setup.bash")  # -> "source /home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/install/setup.bash"
         command = f"{src} && ros2 launch crazyflie launch.py"
         self.launch_crazyswarm = Popen(command, shell=True, stderr=True, stdout=PIPE, text=True,
@@ -79,16 +75,11 @@ class TestFlights(unittest.TestCase):
 
     # runs once per test_ function
     def tearDown(self) -> None:
-        clean_process(self.launch_crazyswarm)   #kill crazyswarm and all of its child processes
-
+        clean_process(self.launch_crazyswarm)   #kill crazyswarm_server and all of its child processes
 
         # copy .ros/log files to results folder
         if Path(Path.home() / ".ros/log").exists():
-            shutil.copytree(Path.home() / ".ros/log", Path(__file__).parents[3] / "results", dirs_exist_ok=True)  #should ask Wolfgang if dirs_exist_ok=True is acceptable
-
-
-        # generate results PDF
-        #or not if already done in the test_function()
+            shutil.copytree(Path.home() / ".ros/log", Path(__file__).parents[3] / f"results/{self.idFolderName()}/roslogs")
 
         return super().tearDown()
 
@@ -99,7 +90,6 @@ class TestFlights(unittest.TestCase):
             before forcefully terminating the test flight script (in case it never finishes correctly).
             NB the testname must be the name of the crayzflie_examples executable (ie the CLI grammar "ros2 run crazyflie_examples testname" must be valid)'''
         
-        print(str(self.ros2_ws))
         src = f"source {str(self.ros2_ws)}/install/setup.bash"
         try:
             command = f"{src} && ros2 bag record -s mcap -o test_{testname} /tf"
@@ -138,12 +128,10 @@ class TestFlights(unittest.TestCase):
         # NB : the mcap filename is almost the same as the folder name but has _0 at the end
         inputbag = f"{str(self.ros2_ws)}/results/test_{testname}/test_{testname}_0.mcap"
         output_csv = f"{str(self.ros2_ws)}/results/test_{testname}/test_{testname}_0.csv"
-        print(inputbag," ",output_csv)
 
         writer = McapHandler()
         writer.write_mcap_to_csv(inputbag, output_csv)  #translate bag from mcap to csv
         output_pdf = f"{str(self.ros2_ws)}/results/test_{testname}/results_{testname}.pdf"
-        print(output_pdf)
         rosbag_csv = output_csv
 
         plotter = Plotter()
@@ -152,28 +140,23 @@ class TestFlights(unittest.TestCase):
 
 
 
-    def test_figure8(self):
-        self.test_file = "../crazyflie_examples/crazyflie_examples/data/figure8.csv"
-        # run test
-        self.record_start_and_clean("figure8", 20)
-        test_passed = self.translate_plot_and_check("figure8")
+    # def test_figure8(self):
+    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/figure8.csv"
+    #     # run test
+    #     self.record_start_and_clean("figure8", 20)
+    #     #create the plot etc
+    #     test_passed = self.translate_plot_and_check("figure8")
+    #     assert test_passed, "figure8 test failed : deviation larger than epsilon"
 
-        # add assert to verify trajectory
-        assert test_passed, "figure8 test failed : deviation larger than epsilon"
-
-    def test_multitrajectory(self):
+    def test_multi_trajectory(self):
         self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
         self.record_start_and_clean("multi_trajectory", 80)
-        self.translate_plot_and_check("multi_trajectory")
-        pass
+        test_passed = self.translate_plot_and_check("multi_trajectory")
+        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+        
 
 
 
 if __name__ == '__main__':
-    # unittest.main()
-    setUpModule()
-    tester = TestFlights()
-    tester.setUp()
-    tester.test_figure8()
-    tester.test_multitrajectory
-    tester.tearDown()
+    unittest.main()
+
