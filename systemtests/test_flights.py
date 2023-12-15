@@ -137,15 +137,7 @@ class TestFlights(unittest.TestCase):
         plotter = Plotter()
         plotter.create_figures(self.test_file, rosbag_csv, output_pdf) #plot the data
         return plotter.test_passed()
-
-    def test_hello_world(self):
-        #this is not a fully functionning test at the moment (it supposes the hello_world ideal trajectory is figure8 so of course it a always fail)
-        self.test_file = "../crazyflie_examples/crazyflie_examples/data/figure8.csv"
-        # run test
-        self.record_start_and_clean("hello_world", 40)
-        #create the plot etc
-        test_passed = self.translate_plot_and_check("hello_world")
-        #assert test_passed, "hello_world test failed : deviation larger than epsilon"
+    
 
 
     def test_figure8(self):
@@ -156,11 +148,11 @@ class TestFlights(unittest.TestCase):
         test_passed = self.translate_plot_and_check("figure8")
         assert test_passed, "figure8 test failed : deviation larger than epsilon"
 
-    # def test_multi_trajectory(self):
-    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-    #     self.record_start_and_clean("multi_trajectory", 80)
-    #     test_passed = self.translate_plot_and_check("multi_trajectory")
-    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    def test_multi_trajectory(self):
+        self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
+        self.record_start_and_clean("multi_trajectory", 80)
+        test_passed = self.translate_plot_and_check("multi_trajectory")
+        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
