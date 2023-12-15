@@ -47,9 +47,8 @@ jobs:
         with:
           name: pdf_bagfiles_and_logs
           path: |
-            ros2_ws/bagfiles
             ros2_ws/results
-            ~/.ros/log
+          
 
 
 
