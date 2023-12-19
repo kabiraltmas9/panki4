@@ -185,7 +185,8 @@ class Crazyflie:
         # self.cmdVelocityWorldMsg.header.frame_id = '/world'
 
     def setGroupMask(self, groupMask):
-        """Set the group mask bits for this robot.
+        """
+        Set the group mask bits for this robot.
 
         The purpose of groups is to make it possible to trigger an action
         (for example, executing a previously-uploaded trajectory) on a subset
@@ -206,10 +207,14 @@ class Crazyflie:
         ----
             groupMask (int): An 8-bit integer representing this robot's
                 membership status in each of the <= 8 possible groups.
+
         """
         # Note that this requires a recent firmware; older firmware versions
         #      do not have such a parameter.
-        self.setParam('hlCommander.groupmask', groupMask)
+        try:
+            self.setParam('hlCommander.groupmask', groupMask)
+        except KeyError:
+            self.node.get_logger().error('setGroupMask: Your firmware is too old - Please update.')
 
     # def enableCollisionAvoidance(self, others, ellipsoidRadii):
     #     """Enables onboard collision avoidance.
