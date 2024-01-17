@@ -39,7 +39,7 @@ jobs:
           source /opt/ros/humble/setup.bash
           . install/local_setup.bash
           export ROS_LOCALHOST_ONLY=1
-          python3 src/crazyswarm2/systemtests/test_flights.py
+          python3 src/crazyswarm2/systemtests/test_flights.py --sim
 
       - name: Upload files
         id: step6
