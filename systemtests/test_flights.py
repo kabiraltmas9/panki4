@@ -145,7 +145,7 @@ class TestFlights(unittest.TestCase):
         output_pdf = f"{str(self.ros2_ws)}/results/test_{testname}/results_{testname}.pdf"
         rosbag_csv = output_csv
 
-        plotter = Plotter()
+        plotter = Plotter(sim_backend=TestFlights.SIM)
         plotter.create_figures(self.test_file, rosbag_csv, output_pdf) #plot the data
         return plotter.test_passed()
     
@@ -157,36 +157,51 @@ class TestFlights(unittest.TestCase):
         self.record_start_and_clean("figure8", 20)
         #create the plot etc
         test_passed = self.translate_plot_and_check("figure8")
-        assert test_passed, "figure8 test failed : deviation larger than epsilon"
+        test_passed, "figure8 test failed : deviation larger than epsilon"
 
-    # def test_multi_trajectory(self):
-    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-    #     self.record_start_and_clean("multi_trajectory", 80)
-    #     test_passed = self.translate_plot_and_check("multi_trajectory")
-    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    def test_multi_trajectory(self):
+        self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
+        self.record_start_and_clean("multi_trajectory", 80)
+        test_passed = self.translate_plot_and_check("multi_trajectory")
+        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
 
 if __name__ == '__main__':
-    # from argparse import ArgumentParser, Namespace
-    # import sys
-    # parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
-    # parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
-    # args, other_args = parser.parse_known_args()
-    # if args.sim :
-    #     TestFlights.SIM = True
+    from argparse import ArgumentParser, Namespace
+    import sys
+    parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
+    parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
+    args, other_args = parser.parse_known_args()
+    if args.sim :
+        TestFlights.SIM = True
 
     # unittest.main(argv=[sys.argv[0]] + other_args)
+    #unittest call doesn't work. Need to fix it. for the moment : use this 
+    setUpModule()
+    tester = TestFlights()
+    tester.setUp()
+    tester.test_figure8()
+    tester.tearDown()
+    tester.setUp()
+    tester.test_multi_trajectory()
+    tester.tearDown()
+    tearDownModule()
+
+   
 
 
 
-    #####3
+    # #####3
     TestFlights.SIM = True
     setUpModule()
     tester = TestFlights()
     tester.setUp()
     tester.test_figure8()
     tester.tearDown()
+    tester.setUp()
+    tester.test_multi_trajectory()
+    tester.tearDown()
     tearDownModule()
-    #unittest.main()
+    # unittest.main()

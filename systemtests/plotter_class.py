@@ -9,7 +9,7 @@ from pathlib import Path
 
 class Plotter:
 
-    def __init__(self):
+    def __init__(self, sim_backend = False):
         self.params = {'experiment':'1','trajectory':'figure8.csv','motors':'standard motors(CF)', 'propellers':'standard propellers(CF)'}
         self.bag_times = np.empty([0])
         self.bag_x = np.empty([0])
@@ -21,8 +21,11 @@ class Plotter:
         self.euclidian_dist = np.empty([0])
         self.deviation = [] #list of all indexes where euclidian_distance(ideal - recorded) > EPSILON
 
+        self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
-        self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. This could be implemented better later ?
+        self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
+            self.DELAY_CONST_FIG8 = 5.45 #for an unknown reason, the delay constant with the sim_backend is slightly different
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
         self.X_OFFSET_CONST_MULTITRAJ = -0.3 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
@@ -90,7 +93,6 @@ class Plotter:
         
 
         no_match_in_idealcsv=[]
-
         for i in range(bag_arrays_size):  
             try:
                 pos = self.ideal_traj_csv.eval(self.bag_times[i] - self.DELAY_CONST_FIG8).pos
@@ -198,6 +200,11 @@ class Plotter:
         '''Method that creates the pdf with the plots'''
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
+        offset_list = self.find_temporal_offset() ###should I get rid of this feature ?
+        if len(offset_list) == 1:
+            offset_string = f"temporal offset : {offset_list[0]}s \n"
+        elif len(offset_list) ==2:
+            offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
         passed="failed"
         if self.test_passed():
@@ -225,7 +232,7 @@ class Plotter:
         title_text_parameters = f'Parameters:\n'
         for key, value in self.params.items():
             title_text_parameters += f"    {key}: {value}\n"
-        title_text_results = f'Results: test {passed}\n' + f'max error : '
+        title_text_results = f'Results: test {passed}\n' + offset_string + f'max error : '
 
         title_text = text + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
         fig = plt.figure(figsize=(5,8))
@@ -335,6 +342,28 @@ class Plotter:
             print(f"The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {nb_dev_points} "
                   f"datapoints, which corresponds to a duration of {nb_dev_points*0.01}s")
             return False
+        
+    def find_temporal_offset(self) -> list :
+        ''' Returns a list containing the on-graph temporal offset between real and ideal trajectory. If offset is different for x and y axis, returns both in the same list'''
+        peak_x = self.bag_x.argmax()  #find index of extremum value of real trajectory along x axis 
+        peak_time_x = self.bag_times[peak_x] #find corresponding time 
+        peak_x_ideal = self.ideal_traj_x.argmax() #find index of extremum value of ideal traj along x axis
+        peak_time_x_ideal = self.bag_times[peak_x_ideal] #find corresponding time
+        offset_x = peak_time_x_ideal - peak_time_x
+
+        peak_y = self.bag_y.argmax()  #find index of extremum value of real trajectory along y ayis 
+        peak_time_y = self.bag_times[peak_y] #find corresponding time 
+        peak_y_ideal = self.ideal_traj_y.argmax() #find index of extremum value of ideal traj along y ayis
+        peak_time_y_ideal = self.bag_times[peak_y_ideal] #find corresponding time
+        offset_y = peak_time_y_ideal - peak_time_y
+
+        if offset_x == offset_y:
+            print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
+            return [offset_x]
+        else : 
+            print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
+            return [offset_x, offset_y]
+
 
 if __name__=="__main__":
     
@@ -354,7 +383,7 @@ if __name__=="__main__":
     #     import subprocess
     #     subprocess.call(["xdg-open", args.pdf])
 
-    plotter = Plotter()
+    plotter = Plotter(sim_backend=True)
     plotter.create_figures("../crazyflie_examples/crazyflie_examples/data/figure8.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv","/home/julien/testy.pdf")
         
         

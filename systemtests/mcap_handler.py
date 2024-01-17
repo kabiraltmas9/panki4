@@ -37,26 +37,13 @@ class McapHandler:
         Only written to translate the /tf topic but could easily be extended to other topics'''
 
         try:
-            h = open("/home/julien/ros2_ws/results/test_figure8/tf_clock.csv", "w")
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
             writer = csv.writer(f)
-            hwriter = csv.writer(h)
-            start_time = "undefined"
-            start_clock = "undefined"
             for topic, msg, timestamp in self.read_messages(inputbag):
                 if topic =="/tf":
-                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9)
+                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
-                    if start_time == "undefined":
-                        start_time = timestamp
-                        hwriter.writerow(f"first timestamp is {start_time}")   
-                    hwriter.writerow(["/tf",t, msg.transforms[0].transform.translation.x])
-                if topic == "/clock":
-                    if start_clock == "undefined":
-                        start_clock = msg.clock.sec + msg.clock.nanosec*10**(-9)
-                    hwriter.writerow(["/clock", (msg.clock.sec + msg.clock.nanosec*10**(-9)) - start_clock])
-            h.close()
             f.close()
         except FileNotFoundError:
             print(f"McapHandler : file {outputfile} not found")
