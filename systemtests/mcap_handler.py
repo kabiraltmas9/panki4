@@ -37,11 +37,25 @@ class McapHandler:
         Only written to translate the /tf topic but could easily be extended to other topics'''
 
         try:
+            h = open("/home/julien/ros2_ws/results/test_figure8/tf_clock.csv", "w")
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
             writer = csv.writer(f)
+            hwriter = csv.writer(h)
+            start_time = "undefined"
+            start_clock = "undefined"
             for topic, msg, timestamp in self.read_messages(inputbag):
-                writer.writerow([timestamp, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                if topic =="/tf":
+                    writer.writerow([timestamp, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                    if start_time == "undefined":
+                        start_time = timestamp
+                        hwriter.writerow(f"first timestamp is {start_time}")   
+                    hwriter.writerow(["/tf",(timestamp-start_time)*10**(-9), msg.transforms[0].transform.translation.x])
+                if topic == "/clock":
+                    if start_clock == "undefined":
+                        start_clock = msg.clock.sec + msg.clock.nanosec*10**(-9)
+                    hwriter.writerow(["/clock", (msg.clock.sec + msg.clock.nanosec*10**(-9)) - start_clock])
+            h.close()
             f.close()
         except FileNotFoundError:
             print(f"McapHandler : file {outputfile} not found")
@@ -54,11 +68,14 @@ if __name__ == "__main__":
 
     #command line utility 
 
-    from argparse import ArgumentParser, Namespace
-    parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
-    parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
-    parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
-    args:Namespace = parser.parse_args()
+    # from argparse import ArgumentParser, Namespace
+    # parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
+    # parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
+    # parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
+    # args:Namespace = parser.parse_args()
 
-    translator =  McapHandler()
-    translator.write_mcap_to_csv(args.inputbag,args.outputfile)
+    # translator =  McapHandler()
+    # translator.write_mcap_to_csv(args.inputbag,args.outputfile)
+
+    translator = McapHandler()
+    translator.write_mcap_to_csv("/home/julien/ros2_ws/results/test_figure8/test_figure8_0.mcap", "/home/julien/brobro.csv")

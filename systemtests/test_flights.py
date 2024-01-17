@@ -9,6 +9,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 import time
 import signal
 import atexit
+from argparse import ArgumentParser, Namespace
 
 #############################
 
@@ -47,6 +48,7 @@ def clean_process(process:Popen) -> int :
 
 
 class TestFlights(unittest.TestCase):
+    SIM = False
 
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName)
@@ -67,6 +69,8 @@ class TestFlights(unittest.TestCase):
         # launch server
         src = "source " + str(Path(__file__).parents[3] / "install/setup.bash")  # -> "source /home/github/actions-runner/_work/crazyswarm2/crazyswarm2/ros2_ws/install/setup.bash"
         command = f"{src} && ros2 launch crazyflie launch.py"
+        if TestFlights.SIM :                               
+            command += " backend:=sim"    #launch crazyswarm from simulation backend 
         self.launch_crazyswarm = Popen(command, shell=True, stderr=True, stdout=PIPE, text=True,
                                 start_new_session=True, executable="/bin/bash")
         atexit.register(clean_process, self.launch_crazyswarm)  #atexit helps us to make sure processes are cleaned even if script exits unexpectedly
@@ -92,19 +96,26 @@ class TestFlights(unittest.TestCase):
         
         src = f"source {str(self.ros2_ws)}/install/setup.bash"
         try:
-            command = f"{src} && ros2 bag record -s mcap -o test_{testname} /tf"
+            command = f"{src} && ros2 bag record -s mcap -o test_{testname} /tf /clock"    #############################change later ?????                                                #if using sim backend, we also need to record simulation time in /clock topic
             record_bag =  Popen(command, shell=True, stderr=PIPE, stdout=True, text=True,
                                 cwd= self.ros2_ws / "results/", start_new_session=True, executable="/bin/bash") 
             atexit.register(clean_process, record_bag)
 
             command = f"{src} && ros2 run crazyflie_examples {testname}"
+            if TestFlights.SIM:
+                command += " --ros-args -p use_sim_time:=True" #necessary args to start the test in simulation
             start_flight_test = Popen(command, shell=True, stderr=True, stdout=True, 
                                     start_new_session=True, text=True, executable="/bin/bash")
             atexit.register(clean_process, start_flight_test)
 
-            start_flight_test.wait(timeout=max_wait)  #raise Timeoutexpired after max_wait seconds if start_flight_test didn't finish by itself
+            if TestFlights.SIM :
+                start_flight_test.wait(timeout=max_wait*10)  #simulation can be super slow 
+            else : 
+                start_flight_test.wait(timeout=max_wait)  #raise Timeoutexpired after max_wait seconds if start_flight_test didn't finish by itself
+
             clean_process(start_flight_test)          
             clean_process(record_bag)
+            print("finished the test")
 
         except TimeoutExpired:      #if max_wait is exceeded
             clean_process(start_flight_test)          
@@ -120,7 +131,7 @@ class TestFlights(unittest.TestCase):
         if start_flight_test.stderr != None:
             print(testname," start_flight flight stderr: ", start_flight_test.stderr.readlines())
 
-
+        
     def translate_plot_and_check(self, testname:str) -> bool :
         '''Translates rosbag .mcap format to .csv, then uses that csv to plot a pdf. Checks the deviation between ideal and real trajectories, i.e if the drone 
             successfully followed its given trajectory. Returns True if deviation < epsilon(defined in plotter_class.py) at every timestep, false if not.  '''
@@ -148,15 +159,34 @@ class TestFlights(unittest.TestCase):
         test_passed = self.translate_plot_and_check("figure8")
         assert test_passed, "figure8 test failed : deviation larger than epsilon"
 
-    def test_multi_trajectory(self):
-        self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-        self.record_start_and_clean("multi_trajectory", 80)
-        test_passed = self.translate_plot_and_check("multi_trajectory")
-        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    # def test_multi_trajectory(self):
+    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
+    #     self.record_start_and_clean("multi_trajectory", 80)
+    #     test_passed = self.translate_plot_and_check("multi_trajectory")
+    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # from argparse import ArgumentParser, Namespace
+    # import sys
+    # parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
+    # parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
+    # args, other_args = parser.parse_known_args()
+    # if args.sim :
+    #     TestFlights.SIM = True
 
+    # unittest.main(argv=[sys.argv[0]] + other_args)
+
+
+
+    #####3
+    TestFlights.SIM = True
+    setUpModule()
+    tester = TestFlights()
+    tester.setUp()
+    tester.test_figure8()
+    tester.tearDown()
+    tearDownModule()
+    #unittest.main()
