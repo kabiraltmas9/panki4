@@ -186,10 +186,10 @@ class Plotter:
 
         assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after trimming"
 
-        #rewrite bag_times to start at 0 and be written in [s] instead of [ns]
-        bag_start_time = self.bag_times[0]
-        self.bag_times =  (self.bag_times-bag_start_time) * (10**-9)
-        assert self.bag_times[0] == 0
+        # #rewrite bag_times to start at 0 and be written in [s] instead of [ns]
+        # bag_start_time = self.bag_times[0]
+        # self.bag_times =  (self.bag_times-bag_start_time) * (10**-9)
+        # assert self.bag_times[0] == 0
         print(f"trimmed bag_times starts: {self.bag_times[0]}s and ends: {self.bag_times[-1]}, size: {len(self.bag_times)}")
 
 
