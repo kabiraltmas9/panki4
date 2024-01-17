@@ -29,7 +29,7 @@ class Visualization:
             msg.transform.translation.x = state.pos[0]
             msg.transform.translation.y = state.pos[1]
             msg.transform.translation.z = state.pos[2]
-            msg.transform.rotation.x = state.quat[1]
+            msg.transform.rotation.x = state.quat[1]    
             msg.transform.rotation.y = state.quat[2]
             msg.transform.rotation.z = state.quat[3]
             msg.transform.rotation.w = state.quat[0]
