@@ -13,12 +13,13 @@ jobs:
       - name: Build firmware
         id: step1
         run: |
+          apt list swig
           git clone --recursive https://github.com/bitcraze/crazyflie-firmware.git
           make cf2_defconfig
           make bindings_python  
           cd build
           python3 setup.py install --user 
-          echo "$PWD"
+          export PYTHONPATH=/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/crazyflie-firmware/build:$PYTHONPATH
       - name: Create workspace
         id: step2
         run: |
