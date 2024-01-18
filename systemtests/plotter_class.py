@@ -169,7 +169,6 @@ class Plotter:
             i+=1
 
 
-         #######
 
         assert (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
 
@@ -188,10 +187,6 @@ class Plotter:
 
         assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after trimming"
 
-        # #rewrite bag_times to start at 0 and be written in [s] instead of [ns]
-        # bag_start_time = self.bag_times[0]
-        # self.bag_times =  (self.bag_times-bag_start_time) * (10**-9)
-        # assert self.bag_times[0] == 0
         print(f"trimmed bag_times starts: {self.bag_times[0]}s and ends: {self.bag_times[-1]}, size: {len(self.bag_times)}")
 
 
@@ -200,7 +195,7 @@ class Plotter:
         '''Method that creates the pdf with the plots'''
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
-        offset_list = self.find_temporal_offset() ###should I get rid of this feature ?
+        offset_list = self.find_temporal_offset() 
         if len(offset_list) == 1:
             offset_string = f"temporal offset : {offset_list[0]}s \n"
         elif len(offset_list) ==2:
@@ -369,21 +364,18 @@ if __name__=="__main__":
     
     #command line utility 
 
-    # from argparse import ArgumentParser, Namespace
-    # parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
-    # parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
-    # parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
-    # parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
-    # parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
-    # args : Namespace = parser.parse_args()
+    from argparse import ArgumentParser, Namespace
+    parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
+    parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
+    parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
+    parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
+    parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
+    args : Namespace = parser.parse_args()
 
-    # plotter = Plotter()
-    # plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf)
-    # if args.open:
-    #     import subprocess
-    #     subprocess.call(["xdg-open", args.pdf])
+    plotter = Plotter()
+    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf)
+    if args.open:
+        import subprocess
+        subprocess.call(["xdg-open", args.pdf])
 
-    plotter = Plotter(sim_backend=True)
-    plotter.create_figures("../crazyflie_examples/crazyflie_examples/data/figure8.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv","/home/julien/testy.pdf")
-        
-        
+

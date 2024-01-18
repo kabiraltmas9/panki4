@@ -109,7 +109,7 @@ class TestFlights(unittest.TestCase):
             atexit.register(clean_process, start_flight_test)
 
             if TestFlights.SIM :
-                start_flight_test.wait(timeout=max_wait*10)  #simulation can be super slow 
+                start_flight_test.wait(timeout=max_wait*5)  #simulation can be super slow 
             else : 
                 start_flight_test.wait(timeout=max_wait)  #raise Timeoutexpired after max_wait seconds if start_flight_test didn't finish by itself
 
@@ -178,30 +178,3 @@ if __name__ == '__main__':
         TestFlights.SIM = True
 
     unittest.main(argv=[sys.argv[0]] + other_args)
-    # #unittest call doesn't work. Need to fix it. for the moment : use this 
-    # setUpModule()
-    # tester = TestFlights()
-    # tester.setUp()
-    # tester.test_figure8()
-    # tester.tearDown()
-    # tester.setUp()
-    # tester.test_multi_trajectory()
-    # tester.tearDown()
-    # tearDownModule()
-
-   
-
-
-
-    # #####3
-    # TestFlights.SIM = True
-    # setUpModule()
-    # tester = TestFlights()
-    # tester.setUp()
-    # tester.test_figure8()
-    # tester.tearDown()
-    # tester.setUp()
-    # tester.test_multi_trajectory()
-    # tester.tearDown()
-    # tearDownModule()
-    # unittest.main()

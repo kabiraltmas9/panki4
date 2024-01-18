@@ -56,14 +56,12 @@ if __name__ == "__main__":
 
     #command line utility 
 
-    # from argparse import ArgumentParser, Namespace
-    # parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
-    # parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
-    # parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
-    # args:Namespace = parser.parse_args()
+    from argparse import ArgumentParser, Namespace
+    parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
+    parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
+    parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
+    args:Namespace = parser.parse_args()
 
-    # translator =  McapHandler()
-    # translator.write_mcap_to_csv(args.inputbag,args.outputfile)
+    translator =  McapHandler()
+    translator.write_mcap_to_csv(args.inputbag,args.outputfile)
 
-    translator = McapHandler()
-    translator.write_mcap_to_csv("/home/julien/ros2_ws/results/test_figure8/test_figure8_0.mcap", "/home/julien/brobro.csv")
