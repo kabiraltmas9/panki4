@@ -20,6 +20,7 @@
 #include "motion_capture_tracking_interfaces/msg/named_pose_array.hpp"
 #include "crazyflie_interfaces/msg/full_state.hpp"
 #include "crazyflie_interfaces/msg/position.hpp"
+#include "crazyflie_interfaces/msg/status.hpp"
 #include "crazyflie_interfaces/msg/log_data_generic.hpp"
 #include "crazyflie_interfaces/msg/connection_statistics_array.hpp"
 
@@ -102,6 +103,19 @@ private:
     uint16_t right;
   } __attribute__((packed));
 
+  struct logStatus {
+    // general status
+    uint16_t supervisorInfo; // supervisor.info
+    // battery related
+    // TODO: would it be better to use pm.batteryLevel?
+    uint16_t vbatMV;  // pm.vbatMV
+    uint8_t pmState;  // pm.state
+    // radio related
+    uint8_t rssi;     // radio.rssi
+    uint16_t numRxBc; // radio.numRxBc
+    uint16_t numRxUc; // radio.numRxUc
+  } __attribute__((packed));
+
 public:
   CrazyflieROS(
     const std::string& link_uri,
@@ -110,6 +124,7 @@ public:
     rclcpp::Node* node,
     rclcpp::CallbackGroup::SharedPtr callback_group_cf_cmd,
     rclcpp::CallbackGroup::SharedPtr callback_group_cf_srv,
+    const CrazyflieBroadcaster* cfbc,
     bool enable_parameters = true)
     : logger_(rclcpp::get_logger(name))
     , cf_logger_(logger_)
@@ -121,6 +136,7 @@ public:
     , node_(node)
     , tf_broadcaster_(node)
     , last_on_latency_(std::chrono::steady_clock::now())
+    , cfbc_(cfbc)
   {
     auto sub_opt_cf_cmd = rclcpp::SubscriptionOptions();
     sub_opt_cf_cmd.callback_group = callback_group_cf_cmd;
@@ -354,6 +370,28 @@ public:
                 {"range", "right"}
               }, cb));
             log_block_scan_->start(uint8_t(100.0f / (float)freq)); // this is in tens of milliseconds
+          }
+          else if (i.first.find("default_topics.status") == 0) {
+            int freq = log_config_map["default_topics.status.frequency"].get<int>();
+            RCLCPP_INFO(logger_, "Logging to /status at %d Hz", freq);
+
+            publisher_status_ = node->create_publisher<crazyflie_interfaces::msg::Status>(name + "/status", 10);
+
+            std::function<void(uint32_t, const logStatus*)> cb = std::bind(&CrazyflieROS::on_logging_status, this, std::placeholders::_1, std::placeholders::_2);
+
+            log_block_status_.reset(new LogBlock<logStatus>(
+              &cf_,{
+                // general status
+                {"supervisor", "info"},
+                // battery related
+                {"pm", "vbatMV"},
+                {"pm", "state"},
+                // radio related
+                {"radio", "rssi"},
+                {"radio", "numRxBc"},
+                {"radio", "numRxUc"},
+              }, cb));
+            log_block_status_->start(uint8_t(100.0f / (float)freq)); // this is in tens of milliseconds
           }
           else if (i.first.find("custom_topics") == 0
                    && i.first.rfind(".vars") != std::string::npos) {
@@ -690,6 +728,46 @@ private:
     }
   }
 
+  void on_logging_status(uint32_t time_in_ms, const logStatus* data) {
+    if (publisher_status_) {
+      
+      crazyflie_interfaces::msg::Status msg;
+      msg.header.stamp = node_->get_clock()->now();
+      msg.header.frame_id = name_;
+      msg.supervisor_info = data->supervisorInfo;
+      msg.battery_voltage = data->vbatMV / 1000.0f;
+      msg.pm_state = data->pmState;
+      msg.rssi = data->rssi;
+      int32_t deltaRxBc = data->numRxBc - previous_numRxBc;
+      int32_t deltaRxUc = data->numRxUc - previous_numRxUc;
+      // handle overflow
+      if (deltaRxBc < 0) {
+        deltaRxBc += std::numeric_limits<uint16_t>::max();
+      }
+      if (deltaRxUc) {
+        deltaRxUc += std::numeric_limits<uint16_t>::max();
+      }
+      msg.num_rx_broadcast = deltaRxBc;
+      msg.num_rx_unicast = deltaRxUc;
+      previous_numRxBc = data->numRxBc;
+      previous_numRxUc = data->numRxUc;
+
+      // compare with connection stats (unicast)
+      const auto statsUc = cf_.connectionStats();
+      size_t deltaTxUc = statsUc.sent_count - previous_stats_unicast_.sent_count;
+      msg.num_tx_unicast = deltaTxUc;
+      previous_stats_unicast_ = statsUc;
+
+      // compare with connection stats (broadcast)
+      const auto statsBc = cfbc_->connectionStats();
+      size_t deltaTxBc = statsBc.sent_count - previous_stats_broadcast_.sent_count;
+      msg.num_tx_broadcast = deltaTxBc;
+      previous_stats_broadcast_ = statsBc;
+
+      publisher_status_->publish(msg);
+    }
+  }
+
   void on_logging_custom(uint32_t time_in_ms, const std::vector<float>* values, void* userData) {
 
     auto pub = reinterpret_cast<rclcpp::Publisher<crazyflie_interfaces::msg::LogDataGeneric>::SharedPtr*>(userData);
@@ -773,6 +851,14 @@ private:
 
   std::unique_ptr<LogBlock<logScan>> log_block_scan_;
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr publisher_scan_;
+
+  std::unique_ptr<LogBlock<logStatus>> log_block_status_;
+  rclcpp::Publisher<crazyflie_interfaces::msg::Status>::SharedPtr publisher_status_;
+  uint16_t previous_numRxBc;
+  uint16_t previous_numRxUc;
+  bitcraze::crazyflieLinkCpp::Connection::Statistics previous_stats_unicast_;
+  bitcraze::crazyflieLinkCpp::Connection::Statistics previous_stats_broadcast_;
+  const CrazyflieBroadcaster* cfbc_;
 
   std::list<std::unique_ptr<LogBlockGeneric>> log_blocks_generic_;
   std::list<rclcpp::Publisher<crazyflie_interfaces::msg::LogDataGeneric>::SharedPtr> publishers_generic_;
@@ -888,19 +974,19 @@ public:
         // if it is a Crazyflie, try to connect
         if (constr == "crazyflie") {
           std::string uri = parameter_overrides.at("robots." + name + ".uri").get<std::string>();
+          auto broadcastUri = Crazyflie::broadcastUriFromUnicastUri(uri);
+          if (broadcaster_.count(broadcastUri) == 0) {
+            broadcaster_.emplace(broadcastUri, std::make_unique<CrazyflieBroadcaster>(broadcastUri));
+          }
+
           crazyflies_.emplace(name, std::make_unique<CrazyflieROS>(
             uri,
             cf_type,
             name,
             this,
             callback_group_cf_cmd_,
-            callback_group_cf_srv_));
-
-          auto broadcastUri = crazyflies_[name]->broadcastUri();
-          RCLCPP_INFO(logger_, "%s", broadcastUri.c_str());
-          if (broadcaster_.count(broadcastUri) == 0) {
-            broadcaster_.emplace(broadcastUri, std::make_unique<CrazyflieBroadcaster>(broadcastUri));
-          }
+            callback_group_cf_srv_,
+            broadcaster_.at(broadcastUri).get()));
 
           update_name_to_id_map(name, crazyflies_[name]->id());
         }
