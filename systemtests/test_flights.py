@@ -169,7 +169,7 @@ class TestFlights(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser, Namespace
+    from argparse import ArgumentParser
     import sys
     parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
     parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
@@ -177,31 +177,31 @@ if __name__ == '__main__':
     if args.sim :
         TestFlights.SIM = True
 
-    # unittest.main(argv=[sys.argv[0]] + other_args)
-    #unittest call doesn't work. Need to fix it. for the moment : use this 
-    setUpModule()
-    tester = TestFlights()
-    tester.setUp()
-    tester.test_figure8()
-    tester.tearDown()
-    tester.setUp()
-    tester.test_multi_trajectory()
-    tester.tearDown()
-    tearDownModule()
+    unittest.main(argv=[sys.argv[0]] + other_args)
+    # #unittest call doesn't work. Need to fix it. for the moment : use this 
+    # setUpModule()
+    # tester = TestFlights()
+    # tester.setUp()
+    # tester.test_figure8()
+    # tester.tearDown()
+    # tester.setUp()
+    # tester.test_multi_trajectory()
+    # tester.tearDown()
+    # tearDownModule()
 
    
 
 
 
     # #####3
-    TestFlights.SIM = True
-    setUpModule()
-    tester = TestFlights()
-    tester.setUp()
-    tester.test_figure8()
-    tester.tearDown()
-    tester.setUp()
-    tester.test_multi_trajectory()
-    tester.tearDown()
-    tearDownModule()
+    # TestFlights.SIM = True
+    # setUpModule()
+    # tester = TestFlights()
+    # tester.setUp()
+    # tester.test_figure8()
+    # tester.tearDown()
+    # tester.setUp()
+    # tester.test_multi_trajectory()
+    # tester.tearDown()
+    # tearDownModule()
     # unittest.main()
