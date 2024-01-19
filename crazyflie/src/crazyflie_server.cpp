@@ -744,7 +744,7 @@ private:
       if (deltaRxBc < 0) {
         deltaRxBc += std::numeric_limits<uint16_t>::max();
       }
-      if (deltaRxUc) {
+      if (deltaRxUc < 0) {
         deltaRxUc += std::numeric_limits<uint16_t>::max();
       }
       msg.num_rx_broadcast = deltaRxBc;
