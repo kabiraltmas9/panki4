@@ -13,16 +13,15 @@ jobs:
       - name: Build firmware
         id: step1
         run: |
-          #rm crazyflie-firmware
-          #git clone --recursive https://github.com/bitcraze/crazyflie-firmware.git
           ls crazyflie-firmware || git clone --recursive https://github.com/bitcraze/crazyflie-firmware.git
           cd crazyflie-firmware
+          git pull
+          git submodule sync
+          git submodule update --init --recursive
           make cf2_defconfig
           make bindings_python  
           cd build
           python3 setup.py install --user 
-          export PYTHONPATH=/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/crazyflie-firmware/build:$PYTHONPATH
-          python3 -m pip install cffirmware
       - name: Create workspace
         id: step2
         run: |
@@ -32,6 +31,10 @@ jobs:
         run: |
           cd ros2_ws/src
           ls motion_capture_tracking || git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
+          cd motion_capture_tracking
+          git pull
+          git submodule sync
+          git submodule update --recursive --init
       - name: Checkout Crazyswarm2
         id: step4
         uses: actions/checkout@v4
@@ -51,6 +54,8 @@ jobs:
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           . install/local_setup.bash
+          pip list
+          pip show cffirmware
           export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/test_flights.py --sim
 
