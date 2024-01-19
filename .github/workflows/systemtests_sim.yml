@@ -22,6 +22,7 @@ jobs:
           cd build
           python3 setup.py install --user 
           export PYTHONPATH=/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/crazyflie-firmware/build:$PYTHONPATH
+          python3 -m pip install cffirmware
       - name: Create workspace
         id: step2
         run: |
