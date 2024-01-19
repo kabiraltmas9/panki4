@@ -379,18 +379,37 @@ public:
 
             std::function<void(uint32_t, const logStatus*)> cb = std::bind(&CrazyflieROS::on_logging_status, this, std::placeholders::_1, std::placeholders::_2);
 
+            std::list<std::pair<std::string, std::string> > logvars({
+              // general status
+              {"supervisor", "info"},
+              // battery related
+              {"pm", "vbatMV"},
+              {"pm", "state"},
+              // radio related
+              {"radio", "rssi"}
+            });
+
+            // check if this firmware version has radio.numRx{Bc,Uc}
+            status_has_radio_stats_ = false;
+            for (auto iter = cf_.logVariablesBegin(); iter != cf_.logVariablesEnd(); ++iter) {
+              auto entry = *iter;
+              if (entry.group == "radio" && entry.name == "numRxBc") {
+                logvars.push_back({"radio", "numRxBc"});
+                logvars.push_back({"radio", "numRxUc"});
+                status_has_radio_stats_ = true;
+                break;
+              }
+            }
+
+            // older firmware -> use other 16-bit variables
+            if (!status_has_radio_stats_) {
+                RCLCPP_WARN(logger_, "Older firmware. status/num_rx_broadcast and status/num_rx_unicast are set to zero.");
+                logvars.push_back({"pm", "vbatMV"});
+                logvars.push_back({"pm", "vbatMV"});
+            }
+
             log_block_status_.reset(new LogBlock<logStatus>(
-              &cf_,{
-                // general status
-                {"supervisor", "info"},
-                // battery related
-                {"pm", "vbatMV"},
-                {"pm", "state"},
-                // radio related
-                {"radio", "rssi"},
-                {"radio", "numRxBc"},
-                {"radio", "numRxUc"},
-              }, cb));
+              &cf_,logvars, cb));
             log_block_status_->start(uint8_t(100.0f / (float)freq)); // this is in tens of milliseconds
           }
           else if (i.first.find("custom_topics") == 0
@@ -738,27 +757,32 @@ private:
       msg.battery_voltage = data->vbatMV / 1000.0f;
       msg.pm_state = data->pmState;
       msg.rssi = data->rssi;
-      int32_t deltaRxBc = data->numRxBc - previous_numRxBc;
-      int32_t deltaRxUc = data->numRxUc - previous_numRxUc;
-      // handle overflow
-      if (deltaRxBc < 0) {
-        deltaRxBc += std::numeric_limits<uint16_t>::max();
+      if (status_has_radio_stats_) {
+        int32_t deltaRxBc = data->numRxBc - previous_numRxBc;
+        int32_t deltaRxUc = data->numRxUc - previous_numRxUc;
+        // handle overflow
+        if (deltaRxBc < 0) {
+          deltaRxBc += std::numeric_limits<uint16_t>::max();
+        }
+        if (deltaRxUc < 0) {
+          deltaRxUc += std::numeric_limits<uint16_t>::max();
+        }
+        msg.num_rx_broadcast = deltaRxBc;
+        msg.num_rx_unicast = deltaRxUc;
+        previous_numRxBc = data->numRxBc;
+        previous_numRxUc = data->numRxUc;
+      } else {
+        msg.num_rx_broadcast = 0;
+        msg.num_rx_unicast = 0;
       }
-      if (deltaRxUc < 0) {
-        deltaRxUc += std::numeric_limits<uint16_t>::max();
-      }
-      msg.num_rx_broadcast = deltaRxBc;
-      msg.num_rx_unicast = deltaRxUc;
-      previous_numRxBc = data->numRxBc;
-      previous_numRxUc = data->numRxUc;
 
-      // compare with connection stats (unicast)
+      // connection sent stats (unicast)
       const auto statsUc = cf_.connectionStats();
       size_t deltaTxUc = statsUc.sent_count - previous_stats_unicast_.sent_count;
       msg.num_tx_unicast = deltaTxUc;
       previous_stats_unicast_ = statsUc;
 
-      // compare with connection stats (broadcast)
+      // connection sent stats (broadcast)
       const auto statsBc = cfbc_->connectionStats();
       size_t deltaTxBc = statsBc.sent_count - previous_stats_broadcast_.sent_count;
       msg.num_tx_broadcast = deltaTxBc;
@@ -853,6 +877,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr publisher_scan_;
 
   std::unique_ptr<LogBlock<logStatus>> log_block_status_;
+  bool status_has_radio_stats_;
   rclcpp::Publisher<crazyflie_interfaces::msg::Status>::SharedPtr publisher_status_;
   uint16_t previous_numRxBc;
   uint16_t previous_numRxUc;
