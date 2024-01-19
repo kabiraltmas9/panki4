@@ -45,6 +45,16 @@ def clean_process(process:Popen) -> int :
         return 0
     else:
         return 0 #process already terminated
+    
+def print_PIPE(process : Popen, process_name, always=False):
+    '''If process creates some error, prints the stderr and stdout PIPE of the process. NB : stderr and stdout must = PIPE in the Popen constructor'''
+    if process.returncode != 0 or always:
+        out, err = process.communicate()
+        print(f"{process_name} stderr : {err}")
+        print(f"{process_name} stdout : {out}")
+    else:
+        print(f"{process_name} completed sucessfully")
+
 
 
 class TestFlights(unittest.TestCase):
@@ -71,11 +81,11 @@ class TestFlights(unittest.TestCase):
         command = f"{src} && ros2 launch crazyflie launch.py"
         if TestFlights.SIM :                               
             command += " backend:=sim"    #launch crazyswarm from simulation backend 
-        self.launch_crazyswarm = Popen(command, shell=True, stderr=True, stdout=PIPE, text=True,
+        self.launch_crazyswarm = Popen(command, shell=True, stderr=PIPE, stdout=PIPE, text=True,
                                 start_new_session=True, executable="/bin/bash")
         atexit.register(clean_process, self.launch_crazyswarm)  #atexit helps us to make sure processes are cleaned even if script exits unexpectedly
         time.sleep(1)
-
+        print_PIPE(self.launch_crazyswarm, "launch_crazyswarm")
 
     # runs once per test_ function
     def tearDown(self) -> None:
@@ -124,12 +134,10 @@ class TestFlights(unittest.TestCase):
         except KeyboardInterrupt:   #if drone crashes, user can ^C to skip the waiting
             clean_process(start_flight_test)          
             clean_process(record_bag)
-
+        
         #if something went wrong with the bash command lines in Popen, print the error
-        if record_bag.stderr != None:
-            print(testname," record_bag stderr: ", record_bag.stderr.readlines())
-        if start_flight_test.stderr != None:
-            print(testname," start_flight flight stderr: ", start_flight_test.stderr.readlines())
+        print_PIPE(record_bag, "record_bag")
+        print_PIPE(start_flight_test, f"start_flight_test_{self.idFolderName}")
 
         
     def translate_plot_and_check(self, testname:str) -> bool :
