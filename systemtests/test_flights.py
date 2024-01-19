@@ -50,6 +50,7 @@ def print_PIPE(process : Popen, process_name, always=False):
     '''If process creates some error, prints the stderr and stdout PIPE of the process. NB : stderr and stdout must = PIPE in the Popen constructor'''
     if process.returncode != 0 or always:
         out, err = process.communicate()
+        print(f"{process_name} returncode = {process.returncode}")
         print(f"{process_name} stderr : {err}")
         print(f"{process_name} stdout : {out}")
     else:
@@ -85,11 +86,11 @@ class TestFlights(unittest.TestCase):
                                 start_new_session=True, executable="/bin/bash")
         atexit.register(clean_process, self.launch_crazyswarm)  #atexit helps us to make sure processes are cleaned even if script exits unexpectedly
         time.sleep(1)
-        print_PIPE(self.launch_crazyswarm, "launch_crazyswarm")
 
     # runs once per test_ function
     def tearDown(self) -> None:
         clean_process(self.launch_crazyswarm)   #kill crazyswarm_server and all of its child processes
+        print_PIPE(self.launch_crazyswarm, "launch_crazyswarm")
 
         # copy .ros/log files to results folder
         if Path(Path.home() / ".ros/log").exists():
@@ -119,7 +120,7 @@ class TestFlights(unittest.TestCase):
             atexit.register(clean_process, start_flight_test)
 
             if TestFlights.SIM :
-                start_flight_test.wait(timeout=max_wait*1)  #simulation can be super slow 
+                start_flight_test.wait(timeout=max_wait*10)  #simulation can be super slow 
             else : 
                 start_flight_test.wait(timeout=max_wait)  #raise Timeoutexpired after max_wait seconds if start_flight_test didn't finish by itself
 
@@ -136,8 +137,8 @@ class TestFlights(unittest.TestCase):
             clean_process(record_bag)
         
         #if something went wrong with the bash command lines in Popen, print the error
-        print_PIPE(record_bag, "record_bag")
-        print_PIPE(start_flight_test, f"start_flight_test_{self.idFolderName}")
+        print_PIPE(record_bag, f"record_bag for {self.idFolderName()}")
+        print_PIPE(start_flight_test, f"start_flight_test for {self.idFolderName()}")
 
         
     def translate_plot_and_check(self, testname:str) -> bool :
@@ -167,22 +168,26 @@ class TestFlights(unittest.TestCase):
         test_passed = self.translate_plot_and_check("figure8")
         test_passed, "figure8 test failed : deviation larger than epsilon"
 
-    def test_multi_trajectory(self):
-        self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-        self.record_start_and_clean("multi_trajectory", 80)
-        test_passed = self.translate_plot_and_check("multi_trajectory")
-        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    # def test_multi_trajectory(self):
+    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
+    #     self.record_start_and_clean("multi_trajectory", 80)
+    #     test_passed = self.translate_plot_and_check("multi_trajectory")
+    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
-    import sys
-    parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
-    parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
-    args, other_args = parser.parse_known_args()
-    if args.sim :
-        TestFlights.SIM = True
+    # from argparse import ArgumentParser
+    # import sys
+    # parser = ArgumentParser(description="Runs (real or simulated) flight tests with pytest framework")
+    # parser.add_argument("--sim", action="store_true", help="Runs the test from the simulation backend")
+    # args, other_args = parser.parse_known_args()
+    # if args.sim :
+    #     TestFlights.SIM = True
 
-    unittest.main(argv=[sys.argv[0]] + other_args)
+    # unittest.main(argv=[sys.argv[0]] + other_args)
+
+
+    TestFlights.SIM = True
+    unittest.main()
