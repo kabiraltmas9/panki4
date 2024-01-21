@@ -22,7 +22,6 @@ jobs:
           make bindings_python  
           cd build
           python3 setup.py install --user 
-          printenv PYTHONPATH
       - name: Create workspace
         id: step2
         run: |
