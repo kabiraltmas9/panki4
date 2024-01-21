@@ -55,7 +55,7 @@ jobs:
           source /opt/ros/humble/setup.bash
           . install/local_setup.bash
           pip show cffirmware
-          export PYTHONPATH="${PYTHONPATH}:/home/github/.local/lib/python3.10/site-packages/
+          export PYTHONPATH="${PYTHONPATH}:/home/github/.local/lib/python3.10/site-packages/"
           printenv PYTHONPATH
           export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/test_flights.py --sim
