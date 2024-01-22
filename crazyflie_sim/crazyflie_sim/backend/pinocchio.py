@@ -10,7 +10,7 @@ from ..sim_data_types import Action, State
 
 
 class Backend:
-    """Backend that uses newton-euler rigid-body dynamics implemented in numpy."""
+    """Backend that uses pinocchio to simulate the rigid-body dynamics."""
 
     def __init__(self, node: Node, names: list[str], states: list[State]):
         self.node = node
