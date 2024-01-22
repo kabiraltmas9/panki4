@@ -58,7 +58,6 @@ jobs:
           pip show cffirmware
           export PYTHONPATH="${PYTHONPATH}:/home/github/.local/lib/python3.10/site-packages/"
           printenv PYTHONPATH
-          unzip /home/github/.local/lib/python3.10/site-packages/cffirmware-0.1-py3.10.egg
           ##########
           export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/test_flights.py --sim
@@ -75,12 +74,7 @@ jobs:
             #ros2_ws/results
             
 
-      - name: Do some ls
-        id: step8
-        if: '!cancelled()'
-        run: |
-          ls /home/github/.local/lib/python3.10/site-packages/
-          
+
 
             
           
