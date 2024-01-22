@@ -70,6 +70,8 @@ jobs:
           name: pdf_rosbags_and_logs
           path: |
             /home/github/.local/lib/python3.10/site-packages/cffirmware-0.1-py3.10.egg
+            /home/github/.local/lib/python3.10/site-packages/cffirmware.py
+
             #ros2_ws/results
             
 
