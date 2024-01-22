@@ -54,11 +54,12 @@ jobs:
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           . install/local_setup.bash
+          ##########
           pip show cffirmware
           export PYTHONPATH="${PYTHONPATH}:/home/github/.local/lib/python3.10/site-packages/"
           printenv PYTHONPATH
           unzip /home/github/.local/lib/python3.10/site-packages/cffirmware-0.1-py3.10.egg
-
+          ##########
           export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/test_flights.py --sim
 
@@ -69,9 +70,8 @@ jobs:
         with:
           name: pdf_rosbags_and_logs
           path: |
-            /home/github/.local/lib/python3.10/site-packages/cffirmware-0.1-py3.10.egg
             /home/github/.local/lib/python3.10/site-packages/cffirmware.py
-
+            #/home/github/.local/lib/python3.10/site-packages/cffirmware-0.1-py3.10.egg
             #ros2_ws/results
             
 
@@ -79,7 +79,7 @@ jobs:
         id: step8
         if: '!cancelled()'
         run: |
-          ls /home/github/.local/lib/python3.10/
+          ls /home/github/.local/lib/python3.10/site-packages/
           
 
             
