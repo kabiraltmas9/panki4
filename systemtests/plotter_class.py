@@ -23,9 +23,9 @@ class Plotter:
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
-        self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        self.DELAY_CONST_FIG8 = 0  #4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
-            self.DELAY_CONST_FIG8 = 5.45 #for an unknown reason, the delay constant with the sim_backend is slightly different
+            self.DELAY_CONST_FIG8 = 1.35 #5.45 #for an unknown reason, the delay constant with the sim_backend is slightly different
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
         self.X_OFFSET_CONST_MULTITRAJ = -0.3 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
@@ -105,7 +105,8 @@ class Plotter:
 
             #special cases 
             if fig8:                                                                                                         
-                self.ideal_traj_z[i] = self.ALTITUDE_CONST_FIG8                     #special case: in fig8 no altitude is given in the trajectory polynomials  (idealcsv) but is fixed as the takeoff altitude in figure8.py  
+                # self.ideal_traj_z[i] = self.ALTITUDE_CONST_FIG8                     #special case: in fig8 no altitude is given in the trajectory polynomials  (idealcsv) but is fixed as the takeoff altitude in figure8.py  
+                pass
             elif m_t:                                                                   
                 self.ideal_traj_z[i] = pos[2] + self.ALTITUDE_CONST_MULTITRAJ       #for multi_trajectory the altitude given in the trajectory polynomials is added to the fixed takeoff altitude specified in multi_trajectory.py
                 self.ideal_traj_x[i] = pos[0] + self.X_OFFSET_CONST_MULTITRAJ       #the x-axis is offset by 0.3 m because ideal start position not being (0,0,0)
