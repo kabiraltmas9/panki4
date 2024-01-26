@@ -170,11 +170,11 @@ class TestFlights(unittest.TestCase):
         test_passed = self.translate_plot_and_check("figure8")
         test_passed, "figure8 test failed : deviation larger than epsilon"
 
-    # def test_multi_trajectory(self):
-    #     self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
-    #     self.record_start_and_clean("multi_trajectory", 80)
-    #     test_passed = self.translate_plot_and_check("multi_trajectory")
-    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    def test_multi_trajectory(self):
+        self.test_file = "../crazyflie_examples/crazyflie_examples/data/multi_trajectory/traj0.csv"
+        self.record_start_and_clean("multi_trajectory", 80)
+        test_passed = self.translate_plot_and_check("multi_trajectory")
+        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
