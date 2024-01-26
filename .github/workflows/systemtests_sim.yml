@@ -22,6 +22,7 @@ jobs:
           make bindings_python  
           cd build
           python3 setup.py install --user 
+          printenv PYTHONPATH
       - name: Create workspace
         id: step2
         run: |
@@ -55,9 +56,9 @@ jobs:
           source /opt/ros/humble/setup.bash
           . install/local_setup.bash
           ##########
-          pip show cffirmware
-          export PYTHONPATH="${PYTHONPATH}:/home/github/.local/lib/python3.10/site-packages/"
+          export PYTHONPATH="${PYTHONPATH}:/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/crazyflie-firmware/build/"
           printenv PYTHONPATH
+          pip show cffirmware
           ##########
           export ROS_LOCALHOST_ONLY=1
           python3 src/crazyswarm2/systemtests/test_flights.py --sim
