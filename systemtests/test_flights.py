@@ -122,7 +122,7 @@ class TestFlights(unittest.TestCase):
             atexit.register(clean_process, start_flight_test)
 
             if TestFlights.SIM :
-                start_flight_test.wait(timeout=max_wait*1)  #simulation can be super slow 
+                start_flight_test.wait(timeout=max_wait*5)  #simulation can be super slow 
             else : 
                 start_flight_test.wait(timeout=max_wait)  #raise Timeoutexpired after max_wait seconds if start_flight_test didn't finish by itself
 
