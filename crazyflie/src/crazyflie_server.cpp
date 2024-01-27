@@ -107,7 +107,9 @@ private:
     // general status
     uint16_t supervisorInfo; // supervisor.info
     // battery related
-    // TODO: would it be better to use pm.batteryLevel?
+    // Note that using BQ-deck/Bolt one can actually have two batteries at the same time.
+    // vbat refers to the battery directly connected to the CF board and might not reflect
+    // the "external" battery on BQ/Bolt builds
     uint16_t vbatMV;  // pm.vbatMV
     uint8_t pmState;  // pm.state
     // radio related
