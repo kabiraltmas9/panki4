@@ -24,8 +24,10 @@ class Plotter:
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        self.DELAY_CONST_MT = 0
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
-            self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is slightly different
+            self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
+            self.DELAY_CONST_MT = 0
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
         self.X_OFFSET_CONST_MULTITRAJ = -0.3 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
@@ -93,9 +95,16 @@ class Plotter:
         
 
         no_match_in_idealcsv=[]
+
+        delay = 0
+        if fig8:
+            delay = self.DELAY_CONST_FIG8
+        elif m_t:
+            delay = self.DELAY_CONST_MT
+
         for i in range(bag_arrays_size):  
             try:
-                pos = self.ideal_traj_csv.eval(self.bag_times[i] - self.DELAY_CONST_FIG8).pos
+                pos = self.ideal_traj_csv.eval(self.bag_times[i] - delay).pos
             except AssertionError: 
                 no_match_in_idealcsv.append(i)
                 pos = [0,0,0]  #for all recorded datapoints who cannot be matched to a corresponding ideal position we assume the drone is on its ground start position (ie those datapoints are before takeoff or after landing)
