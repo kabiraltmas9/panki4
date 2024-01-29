@@ -27,7 +27,7 @@ class Plotter:
         self.DELAY_CONST_MT = 0
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
             self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
-            self.DELAY_CONST_MT = 0
+            self.DELAY_CONST_MT = 5.8
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
         self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
         self.X_OFFSET_CONST_MULTITRAJ = -0.3 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
