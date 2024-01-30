@@ -965,6 +965,8 @@ public:
     broadcasts_delay_between_repeats_ms_ = this->get_parameter("all.broadcasts.delay_between_repeats_ms").get_parameter_value().get<int>();
     mocap_enabled_ = false;
 
+    this->declare_parameter("robot_description", "");
+
     // Warnings
     this->declare_parameter("warnings.frequency", 1.0);
     float freq = this->get_parameter("warnings.frequency").get_parameter_value().get<float>();
