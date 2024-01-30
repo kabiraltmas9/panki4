@@ -109,7 +109,7 @@ class TestFlights(unittest.TestCase):
         
         src = f"source {str(self.ros2_ws)}/install/setup.bash"
         try:
-            command = f"{src} && ros2 bag record -s mcap -o test_{testname} /tf /clock"    #############################change later ?????                                                #if using sim backend, we also need to record simulation time in /clock topic
+            command = f"{src} && ros2 bag record -s mcap -o test_{testname} /tf"   
             record_bag =  Popen(command, shell=True, stderr=PIPE, stdout=True, text=True,
                                 cwd= self.ros2_ws / "results/", start_new_session=True, executable="/bin/bash") 
             atexit.register(clean_process, record_bag)
@@ -190,5 +190,3 @@ if __name__ == '__main__':
 
     unittest.main(argv=[sys.argv[0]] + other_args)
 
-    # TestFlights.SIM = True
-    # unittest.main()
