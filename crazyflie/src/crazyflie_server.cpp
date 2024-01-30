@@ -163,20 +163,10 @@ public:
 
     publisher_robot_description_ = node->create_publisher<std_msgs::msg::String>(name + "/robot_description",
       rclcpp::QoS(1).transient_local());
-
     {
       auto msg = std::make_unique<std_msgs::msg::String>();
-      msg->data = R"(<?xml version='1.0'?>
-        <robot name='crazyflie'>
-          <link name='crazyflie'>
-            <origin rpy='0 0 0' xyz='0.0 0 0' />
-            <visual>
-                <geometry>
-                  <mesh filename='package://crazyflie/urdf/cf2_assembly.stl'/>
-                </geometry>
-            </visual>
-          </link>
-        </robot>)";
+      auto robot_desc = node->get_parameter("robot_description").get_parameter_value().get<std::string>();
+      msg->data = std::regex_replace(robot_desc, std::regex("$NAME"), name);
       publisher_robot_description_->publish(std::move(msg));
     }
 
