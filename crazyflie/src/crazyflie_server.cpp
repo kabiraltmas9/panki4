@@ -166,7 +166,7 @@ public:
     {
       auto msg = std::make_unique<std_msgs::msg::String>();
       auto robot_desc = node->get_parameter("robot_description").get_parameter_value().get<std::string>();
-      msg->data = std::regex_replace(robot_desc, std::regex("$NAME"), name);
+      msg->data = std::regex_replace(robot_desc, std::regex("\\$NAME"), name);
       publisher_robot_description_->publish(std::move(msg));
     }
 
