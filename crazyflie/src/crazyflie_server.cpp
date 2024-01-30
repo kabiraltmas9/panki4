@@ -12,6 +12,7 @@
 #include "crazyflie_interfaces/srv/land.hpp"
 #include "crazyflie_interfaces/srv/go_to.hpp"
 #include "crazyflie_interfaces/srv/notify_setpoints_stop.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -159,6 +160,25 @@ public:
     subscription_cmd_vel_legacy_ = node->create_subscription<geometry_msgs::msg::Twist>(name + "/cmd_vel_legacy", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_vel_legacy_changed, this, _1), sub_opt_cf_cmd);
     subscription_cmd_full_state_ = node->create_subscription<crazyflie_interfaces::msg::FullState>(name + "/cmd_full_state", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_full_state_changed, this, _1), sub_opt_cf_cmd);
     subscription_cmd_position_ = node->create_subscription<crazyflie_interfaces::msg::Position>(name + "/cmd_position", rclcpp::SystemDefaultsQoS(), std::bind(&CrazyflieROS::cmd_position_changed, this, _1), sub_opt_cf_cmd);
+
+    publisher_robot_description_ = node->create_publisher<std_msgs::msg::String>(name + "/robot_description",
+      rclcpp::QoS(1).transient_local());
+
+    {
+      auto msg = std::make_unique<std_msgs::msg::String>();
+      msg->data = R"(<?xml version='1.0'?>
+        <robot name='crazyflie'>
+          <link name='crazyflie'>
+            <origin rpy='0 0 0' xyz='0.0 0 0' />
+            <visual>
+                <geometry>
+                  <mesh filename='package://crazyflie/urdf/cf2_assembly.stl'/>
+                </geometry>
+            </visual>
+          </link>
+        </robot>)";
+      publisher_robot_description_->publish(std::move(msg));
+    }
 
     // spinning timer
     // used to process all incoming radio messages
@@ -870,6 +890,8 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr subscription_cmd_vel_legacy_;
   rclcpp::Subscription<crazyflie_interfaces::msg::FullState>::SharedPtr subscription_cmd_full_state_;
   rclcpp::Subscription<crazyflie_interfaces::msg::Position>::SharedPtr subscription_cmd_position_;
+
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_robot_description_;
 
   // logging
   std::unique_ptr<LogBlock<logPose>> log_block_pose_;
