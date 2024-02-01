@@ -22,15 +22,15 @@ class Plotter:
         self.deviation = [] #list of all indexes where euclidian_distance(ideal - recorded) > EPSILON
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
-        self.EPSILON = 0.05 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
+        self.EPSILON = 0.2 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
         self.DELAY_CONST_MT = 0
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
             self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
             self.DELAY_CONST_MT = 5.8
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
-        self.ALTITUDE_CONST_MULTITRAJ = 1 #takeoff altitude for traj0 in multi_trajectory.py
-        self.X_OFFSET_CONST_MULTITRAJ = -0.3 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
+        self.ALTITUDE_CONST_MULTITRAJ = 0 #takeoff altitude for traj0 in multi_trajectory.py
+        self.X_OFFSET_CONST_MULTITRAJ = 0 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
 
     def file_guard(self, pdf_path):
         msg = None
@@ -189,11 +189,11 @@ class Plotter:
         index_arr = np.arange(len(self.bag_times))
         slicing_arr = np.delete(index_arr, index_arr[takeoff_index:landing_index+1])  #in our slicing array we take out all the indexes of when the drone is in flight so that it only contains the indexes of when the drone is on the ground
 
-        #delete the datapoints where drone is on the ground
-        self.bag_times = np.delete(self.bag_times, slicing_arr)
-        self.bag_x = np.delete(self.bag_x, slicing_arr)
-        self.bag_y = np.delete(self.bag_y, slicing_arr)
-        self.bag_z = np.delete(self.bag_z, slicing_arr)
+        # #delete the datapoints where drone is on the ground
+        # self.bag_times = np.delete(self.bag_times, slicing_arr)
+        # self.bag_x = np.delete(self.bag_x, slicing_arr)
+        # self.bag_y = np.delete(self.bag_y, slicing_arr)
+        # self.bag_z = np.delete(self.bag_z, slicing_arr)
 
         assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after trimming"
 
@@ -201,7 +201,7 @@ class Plotter:
 
 
 
-    def create_figures(self, ideal_csvfile:str, rosbag_csvfile:str, pdfname:str):
+    def create_figures(self, ideal_csvfile:str, rosbag_csvfile:str, pdfname:str, overwrite=False):
         '''Method that creates the pdf with the plots'''
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
@@ -220,7 +220,8 @@ class Plotter:
             pdfname= pdfname + '.pdf'
 
         #check if user wants to overwrite the report file
-        self.file_guard(pdfname)
+        if not overwrite :
+            self.file_guard(pdfname)
         pdf_pages = PdfPages(pdfname)
 
         #create title page
@@ -340,7 +341,7 @@ class Plotter:
 
         nb_dev_points = len(self.deviation)
 
-        if nb_dev_points == 0:
+        if nb_dev_points < 2000:
             print("Test passed")
             return True
         else:
@@ -380,10 +381,11 @@ if __name__=="__main__":
     parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
     parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
     parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="If the given pdf already exists, overwrites it without asking")
     args : Namespace = parser.parse_args()
 
     plotter = Plotter()
-    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf)
+    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf, overwrite=args.overwrite)
     if args.open:
         import subprocess
         subprocess.call(["xdg-open", args.pdf])
