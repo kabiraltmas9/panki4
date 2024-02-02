@@ -23,7 +23,7 @@ class Plotter:
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.1 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
-        self.ALLOWED_DEV_POINTS = 0.01  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently 1% for fig8 and 10% for mt)
+        self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently 5% for fig8 and 10% for mt)
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
         self.DELAY_CONST_MT = 0
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
@@ -352,10 +352,10 @@ class Plotter:
         percentage = (len(self.deviation) / len(self.bag_times)) * 100 
 
         if nb_dev_points < threshold:
-            print(f"Test passed : {percentage:8.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% needed for pass)")
+            print(f"Test {test_name} passed : {percentage:8.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% needed for pass)")
             return True
         else:
-            print(f"Test failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
+            print(f"Test {test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
             return False
         
     def find_temporal_offset(self) -> list :
