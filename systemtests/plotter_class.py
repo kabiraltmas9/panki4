@@ -172,7 +172,7 @@ class Plotter:
 
 
 
-        assert (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
+        assert False or (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
 
 
         ####get rid of datapoints before takeoff and after landing in bag_times, bag_x, bag_y, bag_y   
