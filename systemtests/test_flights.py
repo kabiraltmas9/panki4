@@ -31,7 +31,7 @@ def clean_process(process:Popen) -> int :
     '''Kills process and its children on exit if they aren't already terminated (called with atexit). Returns 0 on termination, 1 if SIGKILL was needed''' 
     if process.poll() == None:
         group_id = os.getpgid(process.pid)
-        print(f"cleaning process {group_id}")
+        #print(f"cleaning process {group_id}")
         os.killpg(group_id, signal.SIGTERM)
         time.sleep(0.01) #necessary delay before first poll
         i=0

@@ -23,7 +23,7 @@ class Plotter:
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.1 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
-        self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently 5% for fig8 and 10% for mt)
+        self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
         self.DELAY_CONST_FIG8 = 4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
         self.DELAY_CONST_MT = 0
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
@@ -58,7 +58,6 @@ class Plotter:
         self.ideal_traj_csv = Trajectory()
         try:
             path_to_ideal_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)),ideal_csvfile)
-            print(path_to_ideal_csv)
             self.ideal_traj_csv.loadcsv(path_to_ideal_csv)
         except FileNotFoundError:
             print("Plotter : File not found " + path_to_ideal_csv)
@@ -149,6 +148,7 @@ class Plotter:
     def adjust_arrays(self):
         ''' Method that trims the self.bag_* attributes to get rid of the datapoints where the drone is immobile on the ground and makes self.bag_times start at 0 [s]'''
 
+        print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) * 10**-9}s")
         #find the takeoff time and landing times
         ground_level = self.bag_z[0]
@@ -161,10 +161,12 @@ class Plotter:
                 takeoff_index = i
                 takeoff_time = self.bag_times[takeoff_index]
                 airborne = True
+                print(f"takeoff time is {self.bag_times[takeoff_index]}s")
                 print(f"takeof time is {(takeoff_time-self.bag_times[0]) * 10**-9}")
             if airborne and z_coord <= ground_level + ground_level*(0.1): #find when it lands again
                 landing_index = i
                 landing_time = self.bag_times[landing_index]
+                print(f"landing time is {self.bag_times[landing_index]}s")
                 print(f"landing time is {(landing_time-self.bag_times[0]) * 10**-9}")
                 break
             i+=1
