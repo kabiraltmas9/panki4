@@ -57,7 +57,7 @@ jobs:
           export PYTHONPATH="${PYTHONPATH}:/home/github/actions-runner/_work/crazyswarm2/crazyswarm2/crazyflie-firmware/build/"
           export ROS_LOCALHOST_ONLY=1
           export ROS_DOMAIN_ID=99
-          python3 src/crazyswarm2/systemtests/test_flights.py --sim
+          python3 src/crazyswarm2/systemtests/test_flights.py --sim -v    #-v is verbose argument of unittest
 
       - name: Upload files
         id: step7

@@ -29,9 +29,7 @@ class Plotter:
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
             self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
-        # self.ALTITUDE_CONST_MULTITRAJ = 0 #takeoff altitude for traj0 in multi_trajectory.py
-        # self.X_OFFSET_CONST_MULTITRAJ = 0 #offest on the x axis between ideal and real trajectory. Reason: ideal trajectory (traj0.csv) starts with offset of 0.3m and CrazyflieServer.startTrajectory() is relative to start position
-
+    
     def file_guard(self, pdf_path):
         msg = None
         if os.path.exists(pdf_path):
@@ -101,15 +99,6 @@ class Plotter:
                
             self.ideal_traj_x[i], self.ideal_traj_y[i], self.ideal_traj_z[i]= pos[0], pos[1], pos[2]
 
-            # #special cases 
-            # if self.test_name == "fig8":                                                                                                         
-            #     # self.ideal_traj_z[i] = self.ALTITUDE_CONST_FIG8                     #special case: in fig8 no altitude is given in the trajectory polynomials  (idealcsv) but is fixed as the takeoff altitude in figure8.py  
-            #     pass
-            # elif self.test_name == "m_t":                                                                   
-            #     self.ideal_traj_z[i] = pos[2] + self.ALTITUDE_CONST_MULTITRAJ      #for multi_trajectory the altitude given in the trajectory polynomials is added to the fixed takeoff altitude specified in multi_trajectory.py
-            #     self.ideal_traj_x[i] = pos[0] + self.X_OFFSET_CONST_MULTITRAJ       #the x-axis is offset by 0.3 m because ideal start position not being (0,0,0)
-    
-
             self.euclidian_dist[i] = np.linalg.norm([self.ideal_traj_x[i]-self.bag_x[i], 
                                                 self.ideal_traj_y[i]-self.bag_y[i], self.ideal_traj_z[i]-self.bag_z[i]])
             if self.euclidian_dist[i] > self.EPSILON:
@@ -172,7 +161,7 @@ class Plotter:
 
 
 
-        assert False or (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
+        assert (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
 
 
         ####get rid of datapoints before takeoff and after landing in bag_times, bag_x, bag_y, bag_y   

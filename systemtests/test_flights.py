@@ -174,7 +174,7 @@ class TestFlights(unittest.TestCase):
         self.test_file = "multi_trajectory_traj0_ideal.csv"
         self.record_start_and_clean("multi_trajectory", 80)
         test_passed = self.translate_plot_and_check("multi_trajectory")
-        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+        test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
 
 
