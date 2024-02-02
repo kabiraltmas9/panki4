@@ -20,6 +20,7 @@ class Plotter:
         self.ideal_traj_z = np.empty([0])
         self.euclidian_dist = np.empty([0])
         self.deviation = [] #list of all indexes where euclidian_distance(ideal - recorded) > EPSILON
+        self.test_name = None
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.1 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
@@ -50,7 +51,7 @@ class Plotter:
     
 
 
-    def read_csv_and_set_arrays(self, ideal_csvfile, rosbag_csvfile, test_name):
+    def read_csv_and_set_arrays(self, ideal_csvfile, rosbag_csvfile):
         '''Method that reads the csv data of the ideal test trajectory and of the actual recorded trajectory and initializes the attribute arrays'''
 
         
@@ -87,9 +88,9 @@ class Plotter:
         no_match_in_idealcsv=[]
 
         delay = 0
-        if test_name == "fig8":
+        if self.test_name == "fig8":
             delay = self.DELAY_CONST_FIG8
-        elif test_name == "m_t":
+        elif self.test_name == "m_t":
             delay = self.DELAY_CONST_MT
 
         for i in range(bag_arrays_size):  
@@ -103,10 +104,10 @@ class Plotter:
             self.ideal_traj_x[i], self.ideal_traj_y[i], self.ideal_traj_z[i]= pos[0], pos[1], pos[2]
 
             #special cases 
-            if test_name == "fig8":                                                                                                         
+            if self.test_name == "fig8":                                                                                                         
                 # self.ideal_traj_z[i] = self.ALTITUDE_CONST_FIG8                     #special case: in fig8 no altitude is given in the trajectory polynomials  (idealcsv) but is fixed as the takeoff altitude in figure8.py  
                 pass
-            elif test_name == "m_t":                                                                   
+            elif self.test_name == "m_t":                                                                   
                 self.ideal_traj_z[i] = pos[2] + self.ALTITUDE_CONST_MULTITRAJ       #for multi_trajectory the altitude given in the trajectory polynomials is added to the fixed takeoff altitude specified in multi_trajectory.py
                 self.ideal_traj_x[i] = pos[0] + self.X_OFFSET_CONST_MULTITRAJ       #the x-axis is offset by 0.3 m because ideal start position not being (0,0,0)
     
@@ -199,22 +200,22 @@ class Plotter:
 
         #check which test we are plotting : figure8 or multi_trajectory or another one
         if("figure8" in rosbag_csvfile):
-            test_name = "fig8"
+            self.test_name = "fig8"
             self.params["trajectory"] = "figure8"
             print("Plotting fig8 test data")
         elif "multi_trajectory" in rosbag_csvfile:
-            test_name = "mt"
+            self.test_name = "mt"
             self.params["trajectory"] = "multi_trajectory"
             self.EPSILON *= 2  #multi_trajectory test has way more difficulties
             self.ALLOWED_DEV_POINTS *= 10
             print("Plotting multi_trajectory test data")
         else:
-            test_name = "undefined"
+            self.test_name = "undefined"
             self.params["trajectory"] = "undefined"
             print("Plotting unspecified test data")
 
 
-        self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile, test_name)
+        self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
         offset_list = self.find_temporal_offset() 
         if len(offset_list) == 1:
             offset_string = f"temporal offset : {offset_list[0]}s \n"
@@ -222,7 +223,7 @@ class Plotter:
             offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
         passed="failed"
-        if self.test_passed(test_name):
+        if self.test_passed(self.test_name):
             passed = "passed"
         
         #create PDF to save figures
@@ -345,7 +346,7 @@ class Plotter:
 
         print("Results saved in " + pdfname)
 
-    def test_passed(self, test_name) -> bool :
+    def test_passed(self) -> bool :
         '''Returns True if the deviation between recorded and ideal trajectories of the drone didn't exceed EPSILON for more than ALLOWED_DEV_POINTS % of datapoints.
           Returns False otherwise '''
 
@@ -354,10 +355,10 @@ class Plotter:
         percentage = (len(self.deviation) / len(self.bag_times)) * 100 
 
         if nb_dev_points < threshold:
-            print(f"Test {test_name} passed : {percentage:8.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% needed for pass)")
+            print(f"Test {self.test_name} passed : {percentage:8.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% needed for pass)")
             return True
         else:
-            print(f"Test {test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
+            print(f"Test {self.test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
             return False
         
     def find_temporal_offset(self) -> list :
