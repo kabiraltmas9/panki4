@@ -165,16 +165,14 @@ class TestFlights(unittest.TestCase):
     def test_figure8(self):
         self.test_file = "figure8_ideal_traj.csv"
         # run test
-        #self.record_start_and_clean("figure8", 20)
+        self.record_start_and_clean("figure8", 20)
         #create the plot etc
-        #test_passed = self.translate_plot_and_check("figure8")
-        test_passed = False
-        test_passed, "figure8 test failed : deviation larger than epsilon"
+        test_passed = self.translate_plot_and_check("figure8")
+        assert test_passed, "figure8 test failed : deviation larger than epsilon"
 
     def test_multi_trajectory(self):
         self.test_file = "multi_trajectory_traj0_ideal.csv"
-        #self.record_start_and_clean("multi_trajectory", 80)
-        test_passed = True
+        self.record_start_and_clean("multi_trajectory", 80)
         test_passed = self.translate_plot_and_check("multi_trajectory")
         assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
         
