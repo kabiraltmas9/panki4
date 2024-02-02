@@ -223,7 +223,7 @@ class Plotter:
             offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
         passed="failed"
-        if self.test_passed(self.test_name):
+        if self.test_passed():
             passed = "passed"
         
         #create PDF to save figures
