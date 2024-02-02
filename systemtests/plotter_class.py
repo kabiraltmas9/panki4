@@ -137,7 +137,6 @@ class Plotter:
         ''' Method that trims the self.bag_* attributes to get rid of the datapoints where the drone is immobile on the ground and makes self.bag_times start at 0 [s]'''
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
-        print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) * 10**-9}s")
         #find the takeoff time and landing times
         ground_level = self.bag_z[0]
         airborne = False
@@ -147,15 +146,11 @@ class Plotter:
         for z_coord in self.bag_z:
             if not(airborne) and z_coord > ground_level + ground_level*(0.1): #when altitude of the drone is 10% higher than the ground level, it started takeoff
                 takeoff_index = i
-                takeoff_time = self.bag_times[takeoff_index]
                 airborne = True
                 print(f"takeoff time is {self.bag_times[takeoff_index]}s")
-                print(f"takeof time is {(takeoff_time-self.bag_times[0]) * 10**-9}")
             if airborne and z_coord <= ground_level + ground_level*(0.1): #find when it lands again
                 landing_index = i
-                landing_time = self.bag_times[landing_index]
                 print(f"landing time is {self.bag_times[landing_index]}s")
-                print(f"landing time is {(landing_time-self.bag_times[0]) * 10**-9}")
                 break
             i+=1
 
