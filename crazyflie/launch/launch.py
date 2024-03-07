@@ -10,19 +10,28 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 
 
 def generate_launch_description():
+
+    config_folder = LaunchConfiguration('config_folder')
+    config_folder_launch_arg = DeclareLaunchArgument('config_folder',
+        default_value=os.path.join(get_package_share_directory('crazyflie'),
+        'config',
+        'crazyflies.yaml')),
+    
+
+
+
     # load crazyflies
     crazyflies_yaml = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'config',
+        config_folder,
         'crazyflies.yaml')
+
 
     with open(crazyflies_yaml, 'r') as ymlfile:
         crazyflies = yaml.safe_load(ymlfile)
 
     # server params
     server_yaml = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'config',
+        config_folder,
         'server.yaml')
 
     with open(server_yaml, 'r') as ymlfile:
@@ -41,8 +50,7 @@ def generate_launch_description():
 
     # construct motion_capture_configuration
     motion_capture_yaml = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'config',
+        config_folder,
         'motion_capture.yaml')
 
     with open(motion_capture_yaml, 'r') as ymlfile:
@@ -64,8 +72,7 @@ def generate_launch_description():
 
     # teleop params
     teleop_params = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'config',
+        config_folder,
         'teleop.yaml')
 
     return LaunchDescription([
@@ -73,6 +80,7 @@ def generate_launch_description():
         DeclareLaunchArgument('debug', default_value='False'),
         DeclareLaunchArgument('rviz', default_value='False'),
         DeclareLaunchArgument('gui', default_value='True'),
+        config_folder_launch_arg,
         Node(
             package='motion_capture_tracking',
             executable='motion_capture_tracking_node',
