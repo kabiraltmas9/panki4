@@ -10,6 +10,9 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 
 
 def generate_launch_description():
+
+    server_yaml_file = LaunchConfiguration('server_yaml_file')
+
     # load crazyflies
     crazyflies_yaml = os.path.join(
         get_package_share_directory('crazyflie'),
@@ -62,6 +65,11 @@ def generate_launch_description():
     # copy relevent settings to server params
     server_params[1]["poses_qos_deadline"] = motion_capture_params["topics"]["poses"]["qos"]["deadline"]
 
+    #print as yaml
+    print(yaml.dump(server_params, default_flow_style=False, sort_keys=False))
+    #with open('/data.yml', 'w') as outfile:
+    #    yaml.dump(server_params, outfile, default_flow_style=False, sort_keys=False)
+
     # teleop params
     teleop_params = os.path.join(
         get_package_share_directory('crazyflie'),
@@ -72,7 +80,8 @@ def generate_launch_description():
         DeclareLaunchArgument('backend', default_value='cpp'),
         DeclareLaunchArgument('debug', default_value='False'),
         DeclareLaunchArgument('rviz', default_value='False'),
-        DeclareLaunchArgument('gui', default_value='True'),
+        DeclareLaunchArgument('gui', default_value='False'),
+        DeclareLaunchArgument('server_yaml_file', default_value="test.yml"),
         Node(
             package='motion_capture_tracking',
             executable='motion_capture_tracking_node',
@@ -107,7 +116,7 @@ def generate_launch_description():
             condition=LaunchConfigurationEquals('backend','cflib'),
             name='crazyflie_server',
             output='screen',
-            parameters=server_params
+            parameters=[server_yaml_file]
         ),
         Node(
             package='crazyflie',
@@ -115,7 +124,7 @@ def generate_launch_description():
             condition=LaunchConfigurationEquals('backend','cpp'),
             name='crazyflie_server',
             output='screen',
-            parameters=server_params,
+            parameters=[server_yaml_file],
             prefix=PythonExpression(['"xterm -e gdb -ex run --args" if ', LaunchConfiguration('debug'), ' else ""']),
         ),
         Node(
@@ -125,7 +134,7 @@ def generate_launch_description():
             name='crazyflie_server',
             output='screen',
             emulate_tty=True,
-            parameters=server_params
+            parameters=[server_yaml_file]
         ),
         Node(
             condition=LaunchConfigurationEquals('rviz', 'True'),
