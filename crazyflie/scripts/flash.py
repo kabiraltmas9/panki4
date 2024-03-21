@@ -12,6 +12,7 @@ import cflib.crtp  # noqa
 from cflib.bootloader import Bootloader, Target
 from cflib.bootloader.boottypes import BootVersion
 import argparse
+import os
 
 class Flash(Node):
     def __init__(self, uri, file_name, target):
@@ -28,8 +29,8 @@ class Flash(Node):
             else:
                 targets = []
         elif target.startswith("cf2"):
-            if file_name.endswith(".bin") and file_name.startswith("cf2"):
-                [target, type] = target.split("-")
+            base_file_name = os.path.basename(file_name)
+            if base_file_name.endswith(".bin") and base_file_name.startswith("cf2"):
                 targets.append(Target("cf2", 'stm32', 'fw', [], []))
             else:
                 self.get_logger().error(f"Need cf2*.bin file for target {target}")
