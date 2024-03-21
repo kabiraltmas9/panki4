@@ -47,6 +47,9 @@ def main():
     yaml_parser.add_argument("-C", "--configpath",
 		default=Path(__file__).parent.parent.resolve() / "config",
 		help="Path to the configuration *.yaml files")
+    
+    parser.add_argument("--file_name", help="File name for flashing the crazyflie",
+            type=str, default="")
 
     args = parser.parse_args()
 
@@ -72,8 +75,7 @@ def main():
             "crazyflie", 
             "flash.py", 
             f"--uri={uri}",
-            f"--file_name=cf2-2023.11.bin",
-            "--target=stm32-fw",
+            f"--file_name={args.file_name}"
         ]
         else:
             cmd = [
