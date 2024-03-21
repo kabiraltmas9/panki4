@@ -19,14 +19,32 @@ class Flash(Node):
     
         self.get_logger().info(f"Flashing {uri} with {file_name} for {target}")
 
-        targets = {}
+        targets = []
+        if target == "all":
+            targets = []
+            if file_name.endswith(".bin"):
+                self.get_logger().info("Need a .zip file for all targets")
+                return
+            else:
+                targets = []
+        elif target.startswith("cf2"):
+            if file_name.endswith(".bin") and file_name.startswith("cf2"):
+                [target, type] = target.split("-")
+                targets.append(Target("cf2", 'stm32', 'fw', [], []))
+            else:
+                self.get_logger().error(f"Need cf2*.bin file for target {target}")
+                return
+        else:
+            self.get_logger().error(f"Unknown target: {target}")
+            return
+
+        print(targets)
         bl = Bootloader(uri)
         try:
             bl.flash_full(None, file_name, True, targets)
 
         except Exception as e:
-            self.get_logger().error("Failed to flash")
-            self.get_logger().error(str(e))
+            self.get_logger().error(f"Failed to flash, Error {str(e)}")
         finally:
             if bl:
                 bl.close()
