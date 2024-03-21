@@ -25,7 +25,8 @@ VALID_SUBCMDS = {
    "version",
    "listLogVariables",
    "listParams", 
-   "listMemories"
+   "listMemories",
+   "flash",
 }
 
 
@@ -63,13 +64,25 @@ def main():
     
     # Run for all URI's determined.
     for uri in uris:
-        cmd = [
+        if args.subcommand[0] == "flash":
+            SUBPROC_TIMEOUT = 20
+            cmd = [
             "ros2", 
             "run", 
             "crazyflie", 
-            *args.subcommand, 
+            "flash.py", 
             f"--uri={uri}",
+            f"--file_name=cf2-2023.11.bin",
+            "--target=stm32-fw",
         ]
+        else:
+            cmd = [
+                "ros2", 
+                "run", 
+                "crazyflie", 
+                *args.subcommand, 
+                f"--uri={uri}",
+            ]
         print(f"{' '.join(cmd)}")
         subprocess.run(cmd, timeout=SUBPROC_TIMEOUT)
 

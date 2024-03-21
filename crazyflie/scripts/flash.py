@@ -28,7 +28,7 @@ class Flash(Node):
                 return
             else:
                 targets = []
-        elif target.startswith("cf2"):
+        elif target.startswith("stm32"):
             base_file_name = os.path.basename(file_name)
             if base_file_name.endswith(".bin") and base_file_name.startswith("cf2"):
                 targets.append(Target("cf2", 'stm32', 'fw', [], []))
@@ -42,6 +42,8 @@ class Flash(Node):
         print(targets)
         bl = Bootloader(uri)
         try:
+            print(targets)
+            print(file_name)
             bl.flash_full(None, file_name, True, targets)
 
         except Exception as e:
