@@ -8,37 +8,44 @@ A flash utility script to flash crazyflies with the latest firmware
 
 import rclpy
 from rclpy.node import Node
+import cflib.crtp  # noqa
 from cflib.bootloader import Bootloader, Target
 from cflib.bootloader.boottypes import BootVersion
+import argparse
 
 class Flash(Node):
-    def __init__(self):
+    def __init__(self, uri, file_name, target):
         super().__init__('flash')
     
-        self.get_logger().info(f"Flash node has started")
-
-        self.declare_parameter('uri', 'radio://0/80/2M/E7E7E7E7E7')
-        self.declare_parameter('file_name', 'cf2.bin')
-        self.declare_parameter('target', 'all')
-
-
-        uri = self.get_parameter('uri').value
-        file_name = self.get_parameter('file_name').value
-        target = self.get_parameter('target').value
-
         self.get_logger().info(f"Flashing {uri} with {file_name} for {target}")
 
+        targets = {}
         bl = Bootloader(uri)
+        try:
+            bl.flash_full(None, file_name, True, targets)
 
-        bl.flash_full(None, file_name, True, None)
+        except Exception as e:
+            self.get_logger().error("Failed to flash")
+            self.get_logger().error(str(e))
+        finally:
+            if bl:
+                bl.close()
 
+        return
 
 def main(args=None):
+    cflib.crtp.init_drivers()
     rclpy.init(args=args)
+    parser = argparse.ArgumentParser(description="This is a sample script")
+    parser.add_argument('--uri', type=str, default="radio://0/80/2M/E7E7E7E7E7", help='unique resource identifier')
+    parser.add_argument('--file_name', type=str, default="firmware", help='')
+    parser.add_argument('--target', type=str, default="all", help='')
 
-    flash_node = Flash()
+    # Parse the arguments
+    args = parser.parse_args()
 
-    rclpy.spin(flash_node)
+    print("URI: ", args.uri)
+    flash_node = Flash(args.uri, args.file_name, args.target)
 
     flash_node.destroy_node()
     rclpy.shutdown()
