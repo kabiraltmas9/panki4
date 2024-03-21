@@ -78,6 +78,7 @@ def main():
             f"--file_name={args.file_name}"
         ]
         else:
+            SUBPROC_TIMEOUT = 1
             cmd = [
                 "ros2", 
                 "run", 
