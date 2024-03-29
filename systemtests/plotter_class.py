@@ -26,7 +26,7 @@ class Plotter:
         self.EPSILON = 0.15 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
         self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
         self.DELAY_CONST_FIG8 = 1.3 #4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
-        self.DELAY_CONST_MT = 5
+        self.DELAY_CONST_MT = 7
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
             self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
@@ -87,10 +87,8 @@ class Plotter:
         delay = 0
         if self.test_name == "fig8":
             delay = self.DELAY_CONST_FIG8
-            print("FIG8 DELAY ACTIVATED")
         elif self.test_name == "mt":
             delay = self.DELAY_CONST_MT
-            print("MT DELAY ACTIVATED")
 
         for i in range(bag_arrays_size):  
             try:
