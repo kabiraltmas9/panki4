@@ -28,7 +28,8 @@ class Plotter:
         self.DELAY_CONST_FIG8 = 1.3 #4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
         self.DELAY_CONST_MT = 5.5
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
-            self.DELAY_CONST_FIG8 = -0.18  #for an unknown reason, the delay constant with the sim_backend is different
+            self.DELAY_CONST_FIG8 = -0.4  #for an unknown reason, the delay constants with the sim_backend is different
+            self.DELAY_CONST_MT = 0
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
     
     def file_guard(self, pdf_path):
