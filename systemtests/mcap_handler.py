@@ -7,7 +7,7 @@ import csv
 
 class McapHandler:
     def __init__(self):
-        pass
+        self.trajectory_start_time = None
 
     def read_messages(self, input_bag: str):
         reader = rosbag2_py.SequentialReader()
@@ -48,6 +48,12 @@ class McapHandler:
                         t_start = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
                     t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) - t_start
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                if topic == "/rosout" and t_start != None :
+                    if msg.name == "crazyflie_server" and msg.function == "_start_trajectory_callback":
+                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start
+                        self.trajectory_start_time = t
+                        print(f"trajectory started at t={t} and t_start = {t_start}")
+
             f.close()
         except FileNotFoundError:
             print(f"McapHandler : file {outputfile} not found")
