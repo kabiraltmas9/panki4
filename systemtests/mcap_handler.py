@@ -8,6 +8,7 @@ import csv
 class McapHandler:
     def __init__(self):
         self.trajectory_start_time = None
+        self.takeoff_time = None
 
     def read_messages(self, input_bag: str):
         reader = rosbag2_py.SequentialReader()
@@ -36,25 +37,49 @@ class McapHandler:
         '''A method which translates an .mcap rosbag file format to a .csv file. 
         Also modifies the timestamp to start at 0.0 instead of the wall time.
         Only written to translate the /tf topic but could easily be extended to other topics'''
-
-        t_start = None
+        abs_start = None
+        t_start_bag = None #this is the timestamp of the first message we read in the bag (doesn't mean it's exactly the start time of the bag but close enough ?)
         try:
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
             writer = csv.writer(f)
+            writer.writerow(["# t"," x"," y"," z"])
             for topic, msg, timestamp in self.read_messages(inputbag):
                 if topic =="/tf":
-                    if t_start == None:
-                        t_start = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
-                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) - t_start
+                    if t_start_bag == None:
+                        t_start_bag = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
+                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) -t_start_bag
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
-                if topic == "/rosout" and t_start != None :
-                    if msg.name == "crazyflie_server" and msg.function == "_start_trajectory_callback":
-                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start
+                if topic == "/rosout":  #and t_start_bag != None :
+                    # if msg.name == "crazyflie_server" and msg.function == "_start_trajectory_callback":
+                    #     abs_start = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
+                    #     t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) #- t_start_bag
+                    #     self.trajectory_start_time = t
+                    #     #print(f"trajectory started at t={t} and t_start_bag = {t_start_bag}")
+                    #     print(f"start trajectory at {self.trajectory_start_time}")
+                    # if msg.name == "crazyflie_server" and msg.function == "_takeoff_callback":
+                    #     t = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
+                    #     self.takeoff_time = t
+                    #     print(f"takeoff at {self.takeoff_time}")
+                    if msg.name == "crazyflie_server" and msg.function == "start_trajectory":
+                        abs_start = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
+                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
                         self.trajectory_start_time = t
-                        print(f"trajectory started at t={t} and t_start = {t_start}")
+                        print(f"A : start trajectory at {self.trajectory_start_time}")
+                        print(f"B : abs start {abs_start} - t_start_bag {t_start_bag} = trajectory start {abs_start - t_start_bag}")
+                    if msg.name == "crazyflie_server" and msg.function == "takeoff":
+                        abs_takeoff = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
+                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
+                        self.takeoff_time = t
+                        print(f"A : takeoff at {self.takeoff_time}")
+                        print(f"B : abs takeoff {abs_takeoff} - t_start_bag {t_start_bag} = takeoff {abs_takeoff-t_start_bag}")
+
+            #write the trajectory start time as a comment on the last line
+            writer.writerow([f"### takeoff time : {self.takeoff_time}"])
+            writer.writerow([f"### trajectory_start time : {self.trajectory_start_time}"])
 
             f.close()
+            print(f"try 2 : abs start {abs_start} - t_start_bag {t_start_bag} = traj start time {self.trajectory_start_time}")
         except FileNotFoundError:
             print(f"McapHandler : file {outputfile} not found")
             exit(1)

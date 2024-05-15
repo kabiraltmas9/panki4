@@ -24,12 +24,14 @@ class Plotter:
 
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.15 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
+        self.ideal_takeoff = 0.6
+        self.ideal_traj_start = 5.6
         self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
-        self.DELAY_CONST_FIG8 = 1.3 #4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
-        self.DELAY_CONST_MT = 5.5
+        self.DELAY_CONST_FIG8 = 0#1.3 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        self.DELAY_CONST_MT = 0 #5.5
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
-            self.DELAY_CONST_FIG8 = -0.45  #for an unknown reason, the delay constants with the sim_backend is different
-            self.DELAY_CONST_MT = -0.3
+            self.DELAY_CONST_FIG8 = 0#-0.45  #for an unknown reason, the delay constants with the sim_backend is different
+            self.DELAY_CONST_MT = 0#-0.3
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
     
     def file_guard(self, pdf_path):
@@ -74,6 +76,23 @@ class Plotter:
         self.adjust_arrays()
         bag_arrays_size = len(self.bag_times)
         print("number of datapoints in self.bag_*: ",bag_arrays_size)
+        
+        with open(rosbag_csvfile) as f:
+                lines = f.readlines()
+                second_to_lastline = lines[-2] #get 2nd to last line, where tajeoff time is written as comment
+                lastline = lines[-1] #get last line of csv file, where the traj start time is written as comment
+
+        print("lastline", lastline)
+        self.traj_start_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+        print(self.traj_start_time)
+        print("2nd to lastline", second_to_lastline)
+        self.takeoff_time = float(second_to_lastline[second_to_lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+        print(self.takeoff_time)
+
+        offset1 = (self.ideal_takeoff - self.takeoff_time) - 0.15
+        offset2 = (self.ideal_traj_start - self.traj_start_time) + 0
+        print(f"{offset1} {offset2} {offset1 - offset2}")
+
 
         #####calculate ideal trajectory points corresponding to the times of recorded points 
 
@@ -81,25 +100,32 @@ class Plotter:
         self.ideal_traj_y = np.empty([bag_arrays_size])
         self.ideal_traj_z = np.empty([bag_arrays_size])
         self.euclidian_dist = np.empty([bag_arrays_size])
-        
+        #self.offset_times = self.bag_times - offset1 
+
+        #for testing
+        self.ideal_traj_no_x = np.empty([bag_arrays_size])
+        self.ideal_traj_no_y = np.empty([bag_arrays_size])
+        self.ideal_traj_no_z = np.empty([bag_arrays_size])
 
         no_match_in_idealcsv=[]
 
-        delay = 0
-        if self.test_name == "fig8":
-            delay = self.DELAY_CONST_FIG8
-        elif self.test_name == "mt":
-            delay = self.DELAY_CONST_MT
+        delay = offset1
+        # if self.test_name == "fig8":
+        #     delay = self.DELAY_CONST_FIG8
+        # elif self.test_name == "mt":
+        #     delay = self.DELAY_CONST_MT
 
         for i in range(bag_arrays_size):  
             try:
-                pos = self.ideal_traj_csv.eval(self.bag_times[i] - delay).pos
+                pos = self.ideal_traj_csv.eval(self.bag_times[i] + delay).pos
+                pos_no = self.ideal_traj_csv.eval(self.bag_times[i]).pos
             except AssertionError: 
                 no_match_in_idealcsv.append(i)
                 pos = [0,0,0]  #for all recorded datapoints who cannot be matched to a corresponding ideal position we assume the drone is on its ground start position (ie those datapoints are before takeoff or after landing)
-
+                pos_no = [0,0,0]
                
             self.ideal_traj_x[i], self.ideal_traj_y[i], self.ideal_traj_z[i]= pos[0], pos[1], pos[2]
+            self.ideal_traj_no_x[i], self.ideal_traj_no_y[i], self.ideal_traj_no_z[i]= pos_no[0], pos_no[1], pos_no[2]
 
             self.euclidian_dist[i] = np.linalg.norm([self.ideal_traj_x[i]-self.bag_x[i], 
                                                 self.ideal_traj_y[i]-self.bag_y[i], self.ideal_traj_z[i]-self.bag_z[i]])
@@ -206,9 +232,10 @@ class Plotter:
         elif len(offset_list) ==2:
             offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
-        passed="failed"
-        if self.test_passed():
-            passed = "passed"
+        test_result="failed"
+        passed, percentage = self.test_passed()
+        if passed:
+            test_result = "passed"
         
         #create PDF to save figures
         if(pdfname[-4:] != ".pdf"):
@@ -233,7 +260,8 @@ class Plotter:
         title_text_parameters = f'Parameters:\n'
         for key, value in self.params.items():
             title_text_parameters += f"    {key}: {value}\n"
-        title_text_results = f'Results: test {passed}\n' + offset_string + f'max error : '
+        title_text_results = f'Results: test {test_result}\n' + offset_string + f"acceptable deviation EPSILON: {self.EPSILON}[m]\n"
+        title_text_results += f"percentage of points > EPSILON : {percentage:.4f}%\n" + f'max error : '
 
         title_text = text + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
         fig = plt.figure(figsize=(5,8))
@@ -247,6 +275,11 @@ class Plotter:
         fig, ax = plt.subplots()
         ax.plot(self.bag_times, self.ideal_traj_x, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax.plot(self.bag_times, self.bag_x, label='Recorded trajectory')
+        ax.plot(self.bag_times, self.ideal_traj_no_x, label='nonoffset Ideal trajectory', linestyle=":", linewidth=1, zorder=10, color='c')
+        ax.axvline(x=self.takeoff_time, color="r")
+        ax.axvline(x=self.traj_start_time, color = "g")
+        ax.axvline(x=5.6, color="b", linestyle="--")
+        ax.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax.set_xlabel('time [s]')
         ax.set_ylabel('x position [m]')  
         ax.set_title("Trajectory x")
@@ -262,9 +295,13 @@ class Plotter:
         fig2, ax2 = plt.subplots()
         ax2.plot(self.bag_times, self.ideal_traj_y, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax2.plot(self.bag_times, self.bag_y, label='Recorded trajectory')
+        ax2.axvline(x=self.takeoff_time, color="r")
+        ax2.axvline(x=self.traj_start_time, color = "g")
+        ax2.axvline(x=5.6, color="b", linestyle="--")
+        ax2.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax2.set_xlabel('time [s]')
         ax2.set_ylabel('y position [m]')  
-        ax2.set_title("Trajectory y")
+        ax2.set_title("trajectory y")
         ax2.grid(which='major', color='#DDDDDD', linewidth=0.8)
         ax2.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
         ax2.minorticks_on()
@@ -276,6 +313,10 @@ class Plotter:
         fig3, ax3 = plt.subplots()
         ax3.plot(self.bag_times, self.ideal_traj_z, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax3.plot(self.bag_times, self.bag_z, label='Recorded trajectory')
+        ax3.axvline(x=self.takeoff_time, color="r")
+        ax3.axvline(x=self.traj_start_time, color = "g")
+        ax3.axvline(x=5.6, color="b", linestyle="--")
+        ax3.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax3.set_xlabel('time [s]')
         ax3.set_ylabel('z position [m]')   
         ax3.set_title("Trajectory z")
@@ -288,6 +329,10 @@ class Plotter:
  
         fig4, ax4 = plt.subplots()
         ax4.plot(self.bag_times, self.euclidian_dist)
+        ax4.axvline(x=self.takeoff_time, color="r")
+        ax4.axvline(x=self.traj_start_time, color = "g")
+        ax4.axvline(x=5.6, color="b", linestyle="--")
+        ax4.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax4.set_xlabel('time [s]')
         ax4.set_ylabel('Euclidean distance [m]')
         ax4.set_title('Deviation between ideal and recorded trajectories')
@@ -330,20 +375,21 @@ class Plotter:
 
         print("Results saved in " + pdfname)
 
-    def test_passed(self) -> bool :
-        '''Returns True if the deviation between recorded and ideal trajectories of the drone didn't exceed EPSILON for more than ALLOWED_DEV_POINTS % of datapoints.
-          Returns False otherwise '''
+    def test_passed(self) -> tuple :
+        '''Returns a tuple containing (bool:passed, float:percentage). If the deviation between recorded and ideal trajectories of the drone didn't exceed 
+        EPSILON for more than ALLOWED_DEV_POINTS % of datapoints, the boolean passed is True. Otherwise it is false. float:percentage is the percentage
+        of points which whose deviation is less than EPSILON'''
 
         nb_dev_points = len(self.deviation)
         threshold = self.ALLOWED_DEV_POINTS * len(self.bag_times)
         percentage = (len(self.deviation) / len(self.bag_times)) * 100 
 
         if nb_dev_points < threshold:
-            print(f"Test {self.test_name} passed : {percentage:8.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% max for pass)")
-            return True
+            print(f"Test {self.test_name} passed : {percentage:.4f}% of datapoints had deviation larger than {self.EPSILON}m ({self.ALLOWED_DEV_POINTS * 100}% max for pass)")
+            return (True, percentage)
         else:
             print(f"Test {self.test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
-            return False
+            return (False, percentage)
         
     def find_temporal_offset(self) -> list :
         ''' Returns a list containing the on-graph temporal offset between real and ideal trajectory. If offset is different for x and y axis, returns both in the same list'''
@@ -371,19 +417,25 @@ if __name__=="__main__":
     
     #command line utility 
 
-    from argparse import ArgumentParser, Namespace
-    parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
-    parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
-    parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
-    parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
-    parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
-    parser.add_argument("--overwrite", action="store_true", help="If the given pdf already exists, overwrites it without asking")
-    args : Namespace = parser.parse_args()
+    # from argparse import ArgumentParser, Namespace
+    # parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
+    # parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
+    # parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
+    # parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
+    # parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
+    # parser.add_argument("--overwrite", action="store_true", help="If the given pdf already exists, overwrites it without asking")
+    # args : Namespace = parser.parse_args()
 
-    plotter = Plotter()
-    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf, overwrite=args.overwrite)
-    if args.open:
-        import subprocess
-        subprocess.call(["xdg-open", args.pdf])
+    # plotter = Plotter()
+    # plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf, overwrite=args.overwrite)
+    # if args.open:
+    #     import subprocess
+    #     subprocess.call(["xdg-open", args.pdf])
+
+
+    paul = Plotter()
+    paul.create_figures("/home/julien/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv", "test.pdf", overwrite=True)
+    import subprocess
+    subprocess.call(["xdg-open", "test.pdf"])
 
 
