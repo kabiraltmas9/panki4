@@ -115,8 +115,12 @@ class Plotter:
         # elif self.test_name == "mt":
         #     delay = self.DELAY_CONST_MT
 
+        self.dot_list = []########testing
+        
         for i in range(bag_arrays_size):  
             try:
+                if(self.bag_times[i] < 0):
+                    self.dot_list.append(self.bag_times[i])
                 pos = self.ideal_traj_csv.eval(self.bag_times[i] + delay).pos
                 pos_no = self.ideal_traj_csv.eval(self.bag_times[i]).pos
             except AssertionError: 
@@ -284,6 +288,10 @@ class Plotter:
         ax.set_ylabel('x position [m]')  
         ax.set_title("Trajectory x")
         
+        #####testing
+        for i in range(len(self.dot_list)):
+            ax.plot(self.dot_list[i], 0.25, 'ro')
+        
         ax.grid(which='major', color='#DDDDDD', linewidth=0.8)
         ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
         ax.minorticks_on()
@@ -317,6 +325,9 @@ class Plotter:
         ax3.axvline(x=self.traj_start_time, color = "g")
         ax3.axvline(x=5.6, color="b", linestyle="--")
         ax3.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
+        #####testing
+        for i in range(len(self.dot_list)):
+            ax3.plot(self.dot_list[i], 0.25, 'ro')
         ax3.set_xlabel('time [s]')
         ax3.set_ylabel('z position [m]')   
         ax3.set_title("Trajectory z")
@@ -434,7 +445,7 @@ if __name__=="__main__":
 
 
     paul = Plotter()
-    paul.create_figures("/home/julien/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv", "test.pdf", overwrite=True)
+    paul.create_figures("/home/jthevenoz/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/jthevenoz/ros2_ws/results/test_figure8/test_figure8_0_modif.csv", "test.pdf", overwrite=True)
     import subprocess
     subprocess.call(["xdg-open", "test.pdf"])
 
