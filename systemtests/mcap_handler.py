@@ -42,6 +42,13 @@ class McapHandler:
         try:
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
+            ##############
+            absfile = outputfile[:outputfile.find("test_figure8_0")] + "abs.csv"
+            print(absfile)
+            g = open(absfile, "w+")
+            abswriter = csv.writer(g)
+            i=0
+            ##########3
             writer = csv.writer(f)
             writer.writerow(["# t"," x"," y"," z"])
             for topic, msg, timestamp in self.read_messages(inputbag):
@@ -49,7 +56,11 @@ class McapHandler:
                     if t_start_bag == None:
                         t_start_bag = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
                     t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) -t_start_bag
+                    if t < 0:
+                        print(f"{i} : {msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9)} - {t_start_bag} = {t}")
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                    abswriter.writerow([t+t_start_bag, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                    i+=1
                 if topic == "/rosout":  #and t_start_bag != None :
                     # if msg.name == "crazyflie_server" and msg.function == "_start_trajectory_callback":
                     #     abs_start = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
@@ -77,7 +88,7 @@ class McapHandler:
             #write the trajectory start time as a comment on the last line
             writer.writerow([f"### takeoff time : {self.takeoff_time}"])
             writer.writerow([f"### trajectory_start time : {self.trajectory_start_time}"])
-
+            g.close()
             f.close()
             print(f"try 2 : abs start {abs_start} - t_start_bag {t_start_bag} = traj start time {self.trajectory_start_time}")
         except FileNotFoundError:
@@ -91,12 +102,15 @@ if __name__ == "__main__":
 
     #command line utility 
 
-    from argparse import ArgumentParser, Namespace
-    parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
-    parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
-    parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
-    args:Namespace = parser.parse_args()
+    # from argparse import ArgumentParser, Namespace
+    # parser = ArgumentParser(description="Translates the /tf topic of an .mcap rosbag file format to a .csv file")
+    # parser.add_argument("inputbag", type=str, help="The .mcap rosbag file to be translated")
+    # parser.add_argument("outputfile", type=str, help="Output csv file that has to be created/overwritten")
+    # args:Namespace = parser.parse_args()
 
-    translator =  McapHandler()
-    translator.write_mcap_to_csv(args.inputbag,args.outputfile)
+    # translator =  McapHandler()
+    # translator.write_mcap_to_csv(args.inputbag,args.outputfile)
+
+    mcap = McapHandler()
+    mcap.write_mcap_to_csv("/home/julien/Downloads/test_figure8_0.mcap", "/home/julien/output.csv")
 

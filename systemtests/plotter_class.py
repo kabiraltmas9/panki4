@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import os
 import sys 
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.patches import Rectangle
 import numpy as np
 from crazyflie_py.uav_trajectory import Trajectory
 from pathlib import Path
@@ -27,11 +28,11 @@ class Plotter:
         self.ideal_takeoff = 0.6
         self.ideal_traj_start = 5.6
         self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
-        self.DELAY_CONST_FIG8 = 0#1.3 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
-        self.DELAY_CONST_MT = 0 #5.5
-        if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
-            self.DELAY_CONST_FIG8 = 0#-0.45  #for an unknown reason, the delay constants with the sim_backend is different
-            self.DELAY_CONST_MT = 0#-0.3
+        # self.DELAY_CONST_FIG8 = 0#1.3 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        # self.DELAY_CONST_MT = 0 #5.5
+        # if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
+        #     self.DELAY_CONST_FIG8 = 0#-0.45  #for an unknown reason, the delay constants with the sim_backend is different
+        #     self.DELAY_CONST_MT = 0#-0.3
         self.ALTITUDE_CONST_FIG8 = 1 #this is the altitude given for the takeoff in figure8.py. I should find a better solution than a symbolic constant ?
     
     def file_guard(self, pdf_path):
@@ -169,6 +170,30 @@ class Plotter:
         ''' Method that trims the self.bag_* attributes to get rid of the datapoints where the drone is immobile on the ground and makes self.bag_times start at 0 [s]'''
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
+
+        #get rid of datapoints with timestamps that don't make sense
+        self.nonsensical = []
+        time = -1
+        for index,t in enumerate(self.bag_times):
+            if t > time:
+                time = t
+            else:
+                self.nonsensical.append(index)
+
+        if self.nonsensical: #if self.nonsensical is not empty
+            self.unmodified_bag_times = self.bag_times
+            self.unmodified_bag_x = self.bag_x
+            self.unmodified_bag_y = self.bag_y
+            self.unmodified_bag_z = self.bag_z
+            self.bag_times = np.delete(self.bag_times, self.nonsensical)
+            self.bag_x = np.delete(self.bag_x, self.nonsensical)
+            self.bag_y = np.delete(self.bag_y, self.nonsensical)
+            self.bag_z = np.delete(self.bag_z, self.nonsensical)
+            print(f"{len(self.nonsensical)} datapoints were ignored because because their timestamp didn't make sense. They go from index {self.nonsensical[0]} to {self.nonsensical[-1]}")
+
+
+
+
         #find the takeoff time and landing times
         ground_level = self.bag_z[0]
         airborne = False
@@ -321,13 +346,13 @@ class Plotter:
         fig3, ax3 = plt.subplots()
         ax3.plot(self.bag_times, self.ideal_traj_z, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax3.plot(self.bag_times, self.bag_z, label='Recorded trajectory')
-        ax3.axvline(x=self.takeoff_time, color="r")
-        ax3.axvline(x=self.traj_start_time, color = "g")
-        ax3.axvline(x=5.6, color="b", linestyle="--")
-        ax3.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
+        # ax3.axvline(x=self.takeoff_time, color="r")
+        # ax3.axvline(x=self.traj_start_time, color = "g")
+        # ax3.axvline(x=5.6, color="b", linestyle="--")
+        # ax3.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         #####testing
-        for i in range(len(self.dot_list)):
-            ax3.plot(self.dot_list[i], 0.25, 'ro')
+        # for i in range(len(self.dot_list)):
+            # ax3.plot(self.dot_list[i], 0.25, 'ro')
         ax3.set_xlabel('time [s]')
         ax3.set_ylabel('z position [m]')   
         ax3.set_title("Trajectory z")
@@ -381,6 +406,74 @@ class Plotter:
         pdf_pages.savefig(fig6)
 
 
+        # bag_reduced = self.bag_times[:100]
+        # ideal_z_reduced = self.ideal_traj_z[:100]
+        # z_reduced = self.bag_z[:100]
+
+        # fig7, ax7 = plt.subplots()
+        # ax7.plot(bag_reduced, ideal_z_reduced, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
+        # ax7.plot(bag_reduced,z_reduced, label='Recorded trajectory', linewidth=0.1)
+
+        # for i in range(len(bag_reduced)):
+        #     # print(bag_reduced[i])
+        #     a = bag_reduced[i]
+        #     b=z_reduced[i]
+        #     ax7.plot(bag_reduced[i], z_reduced[i], 'ro')
+
+        # ax7.set_xlabel('time [s]')
+        # ax7.set_ylabel('z position [m]')   
+        # ax7.set_title("test z")
+        # ax7.grid(which='major', color='#DDDDDD', linewidth=0.8)
+        # ax7.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+        # ax7.minorticks_on()
+        # fig7.tight_layout(pad = 4)
+        # fig7.legend()
+        # pdf_pages.savefig(fig7) 
+
+        #check if nonsensical timestamps were detected and deleted. If yes, plot the original t, x, y and z arrays to
+        #visualize the problem
+        if self.nonsensical:  
+            indexes = np.arange(len(self.unmodified_bag_times))
+            fig8,ax8 = plt.subplots()
+            ax8.plot(indexes, self.unmodified_bag_times, label='time', linestyle="--", linewidth=1, zorder=10)
+            ax8.plot(indexes, self.unmodified_bag_y, label='y', linestyle="--", linewidth=1, zorder=10)
+            ax8.plot(indexes, self.unmodified_bag_z, label='z', linestyle="--", linewidth=1, zorder=10)
+            ax8.set_xlabel('index')
+            ax8.set_ylabel('arrays t, x, y, z')
+            ax8.set_title('Visualization of unmodified t, x, y and z arrays')
+            fig8.tight_layout(pad=4)
+            ax8.grid(which='major', color='#DDDDDD', linewidth=0.8)
+            ax8.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.8)
+            ax8.minorticks_on()
+            #create rectangle to highlight where the error is
+            anchor = (self.nonsensical[0]-15, np.min(self.unmodified_bag_times)-0.5)
+            up_boundary= self.unmodified_bag_times[self.nonsensical[-1]] + 0.1
+            rect = Rectangle(anchor, width=len(self.nonsensical)+ 30, height=up_boundary, color='r', label="nonsensical", lw=0.1, fill=False)
+            # rect = Rectangle((-1,-1), 1000, 3, color="r", lw=0.5, fill=False)
+            ax8.add_patch(rect)
+            fig8.legend()
+            pdf_pages.savefig(fig8)
+
+
+            fig9,ax9 = plt.subplots()
+            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_x, c="r", s=0.1)
+            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_y, c="c", s=0.1)
+            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_z, c="b", s=0.1)
+            ax9 = plt.scatter(self.bag_times, self.bag_x, c="g", s=0.01, marker='.')
+            ax9 = plt.scatter(self.bag_times, self.bag_y, c="c", s=0.01, marker='.')
+            ax9 = plt.scatter(self.bag_times, self.bag_z, c="b", s=0.01, marker='.')
+
+            ns_times = np.array(self.unmodified_bag_times[self.nonsensical])
+            ns_x = np.array(self.unmodified_bag_x[self.nonsensical])
+            ns_y = np.array(self.unmodified_bag_y[self.nonsensical])
+            ns_z = np.array(self.unmodified_bag_z[self.nonsensical])
+            print(f"len (ns_times) = {len(ns_times)}")
+            ax9 = plt.scatter(ns_times, ns_x, c="m", s=0.1, marker='v')
+            ax9 = plt.scatter(ns_times, ns_y, c="y", s=0.1, marker='<')
+            ax9 = plt.scatter(ns_times, ns_z, c="r", s=0.1, marker='^')
+            pdf_pages.savefig(fig9)
+
+
 
         pdf_pages.close()
 
@@ -417,10 +510,10 @@ class Plotter:
         offset_y = peak_time_y_ideal - peak_time_y
 
         if offset_x == offset_y:
-            print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
+            # print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
             return [offset_x]
         else : 
-            print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
+            # print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
             return [offset_x, offset_y]
 
 
@@ -445,8 +538,8 @@ if __name__=="__main__":
 
 
     paul = Plotter()
-    paul.create_figures("/home/jthevenoz/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/jthevenoz/ros2_ws/results/test_figure8/test_figure8_0_modif.csv", "test.pdf", overwrite=True)
+    paul.create_figures("/home/julien/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv", "test1.pdf", overwrite=True)
     import subprocess
-    subprocess.call(["xdg-open", "test.pdf"])
+    subprocess.call(["xdg-open", "test1.pdf"])
 
 
