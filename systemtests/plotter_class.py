@@ -153,7 +153,7 @@ class Plotter:
 
 
     def adjust_arrays(self):
-        ''' Method that adjusts the self.bag_* attributes to get rid of the datapoints whose timestamp doesn't make sense. Also normalizes self.bag_times tostart at 0 [s]'''
+        ''' Method that adjusts the self.bag_* attributes to get rid of the datapoints whose timestamp don't make sense'''
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
 
@@ -178,43 +178,7 @@ class Plotter:
             self.bag_z = np.delete(self.bag_z, self.nonsensical)
             print(f"{len(self.nonsensical)} datapoints were ignored because because their timestamp wasn't in the good order (delayed message problem). They go from index {self.nonsensical[0]} to {self.nonsensical[-1]}")
 
-
-        #NB the rest of this function is mostly useless now. I should delete it ?
-        #find the takeoff time and landing times
-        ground_level = self.bag_z[0]
-        airborne = False
-        takeoff_index = None
-        landing_index = None
-        i=0
-        for z_coord in self.bag_z:
-            if not(airborne) and z_coord > ground_level + ground_level*(0.1): #when altitude of the drone is 10% higher than the ground level, it started takeoff
-                takeoff_index = i
-                airborne = True
-                print(f"takeoff time is {self.bag_times[takeoff_index]}s")
-            if airborne and z_coord <= ground_level + ground_level*(0.1): #find when it lands again
-                landing_index = i
-                print(f"landing time is {self.bag_times[landing_index]}s")
-                break
-            i+=1
-
-
-
-        assert (takeoff_index != None) and (landing_index != None), "Plotter : couldn't find drone takeoff or landing"
-
-
-        ####get rid of datapoints before takeoff and after landing in bag_times, bag_x, bag_y, bag_y   
-
-        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size before trimming"
-        index_arr = np.arange(len(self.bag_times))
-        slicing_arr = np.delete(index_arr, index_arr[takeoff_index:landing_index+1])  #in our slicing array we take out all the indexes of when the drone is in flight so that it only contains the indexes of when the drone is on the ground
-
-        # #delete the datapoints where drone is on the ground
-        # self.bag_times = np.delete(self.bag_times, slicing_arr)
-        # self.bag_x = np.delete(self.bag_x, slicing_arr)
-        # self.bag_y = np.delete(self.bag_y, slicing_arr)
-        # self.bag_z = np.delete(self.bag_z, slicing_arr)
-
-        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after trimming"
+        assert len(self.bag_times) == len(self.bag_x) == len(self.bag_y) == len(self.bag_z), "Plotter : self.bag_* aren't the same size after adjusting arrays"
 
         print(f"trimmed bag_times starts: {self.bag_times[0]}s and ends: {self.bag_times[-1]}, size: {len(self.bag_times)}")
 
