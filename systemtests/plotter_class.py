@@ -85,7 +85,11 @@ class Plotter:
         with open(rosbag_csvfile) as f:
                 lines = f.readlines()
                 lastline = lines[-1] #get last line of csv file, where the takeoff time is written as comment
-                self.takeoff_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+                try:
+                    self.takeoff_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+                except ValueError: #if no takeoff was issued, there will be a "None" in the lastline which will produce value error when converting to float
+                    print("Warning : No takeoff written in the lastline of the rosbag csv file : offset cannot be corrected.")
+                    self.takeoff_time = 0
         offset1 = (self.ideal_takeoff - self.takeoff_time) - 0.15
 
 
@@ -100,9 +104,9 @@ class Plotter:
         no_match_in_idealcsv=[]
 
         delay = offset1
-        # if self.test_name == "fig8":
+        # if self.test_name == "fig8" and self.SIM:
         #     delay = self.DELAY_CONST_FIG8
-        # elif self.test_name == "mt":
+        # elif self.test_name == "mt" and self.SIM:
         #     delay = self.DELAY_CONST_MT
 
         self.dot_list = []########testing
@@ -229,7 +233,9 @@ class Plotter:
             name = "Unnamed test"
             print("Plotter : test name not defined")
 
-        text = f'{name} trajectory test'
+        title = f'{name} trajectory test'
+        if self.SIM:  
+            title += "(SIMULATION)"
         title_text_settings = f'Settings:\n'
         title_text_parameters = f'Parameters:\n'
         for key, value in self.params.items():
@@ -239,7 +245,7 @@ class Plotter:
         title_text_results += f"median error : {np.median(self.euclidian_dist):.6f} [m]\n" + f"max error : {np.max(self.euclidian_dist):.6f} [m]\n"
 
 
-        title_text = text + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
+        title_text = title + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
         fig = plt.figure(figsize=(5,8))
         fig.text(0.1, 0.1, title_text, size=11)
     
