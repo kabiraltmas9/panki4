@@ -83,16 +83,11 @@ class Plotter:
                 second_to_lastline = lines[-2] #get 2nd to last line, where tajeoff time is written as comment
                 lastline = lines[-1] #get last line of csv file, where the traj start time is written as comment
 
-        print("lastline", lastline)
-        self.traj_start_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
-        print(self.traj_start_time)
-        print("2nd to lastline", second_to_lastline)
-        self.takeoff_time = float(second_to_lastline[second_to_lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
-        print(self.takeoff_time)
 
+        self.traj_start_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+        self.takeoff_time = float(second_to_lastline[second_to_lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
         offset1 = (self.ideal_takeoff - self.takeoff_time) - 0.15
-        offset2 = (self.ideal_traj_start - self.traj_start_time) + 0
-        print(f"{offset1} {offset2} {offset1 - offset2}")
+
 
 
         #####calculate ideal trajectory points corresponding to the times of recorded points 
@@ -103,10 +98,10 @@ class Plotter:
         self.euclidian_dist = np.empty([bag_arrays_size])
         #self.offset_times = self.bag_times - offset1 
 
-        #for testing
-        self.ideal_traj_no_x = np.empty([bag_arrays_size])
-        self.ideal_traj_no_y = np.empty([bag_arrays_size])
-        self.ideal_traj_no_z = np.empty([bag_arrays_size])
+        # #for testing
+        # self.ideal_traj_no_x = np.empty([bag_arrays_size])
+        # self.ideal_traj_no_y = np.empty([bag_arrays_size])
+        # self.ideal_traj_no_z = np.empty([bag_arrays_size])
 
         no_match_in_idealcsv=[]
 
@@ -130,7 +125,7 @@ class Plotter:
                 pos_no = [0,0,0]
                
             self.ideal_traj_x[i], self.ideal_traj_y[i], self.ideal_traj_z[i]= pos[0], pos[1], pos[2]
-            self.ideal_traj_no_x[i], self.ideal_traj_no_y[i], self.ideal_traj_no_z[i]= pos_no[0], pos_no[1], pos_no[2]
+            # self.ideal_traj_no_x[i], self.ideal_traj_no_y[i], self.ideal_traj_no_z[i]= pos_no[0], pos_no[1], pos_no[2]
 
             self.euclidian_dist[i] = np.linalg.norm([self.ideal_traj_x[i]-self.bag_x[i], 
                                                 self.ideal_traj_y[i]-self.bag_y[i], self.ideal_traj_z[i]-self.bag_z[i]])
@@ -171,8 +166,12 @@ class Plotter:
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
 
-        #get rid of datapoints with timestamps that don't make sense
-        self.nonsensical = []
+        #recurring problem : some messages recorded from /tf arrive way later (2-4 seconds) than when they were emitted, which makes a mess in the timestamps
+        #zB we have timestamps (in s) : 5.1, 5.2, 5.3, !!!3.7, 3.9, 4.5, 4.9!!!, 5.4, 5.5, 5.6, 5.7 etc. This bug almost always occurs in the first seconds of the recording, generally only happens once per recording
+        #and only concerns a very small percentage of datapoints (10-40 over about 1800 total), so it is not a big deal. We do not know if this bug stems from the Rosbag recording, from how /tf behaves or from the radio
+
+        #Since we use a lineplot, we need to get rid of these datapoints that are in an order that doesn't make sense so that the plot can be readable
+        self.nonsensical = [] #list of indexes of datapoints who arrived too late, meaning their timestamp doesn't follow the ones before
         time = -1
         for index,t in enumerate(self.bag_times):
             if t > time:
@@ -180,16 +179,17 @@ class Plotter:
             else:
                 self.nonsensical.append(index)
 
+
         if self.nonsensical: #if self.nonsensical is not empty
-            self.unmodified_bag_times = self.bag_times
-            self.unmodified_bag_x = self.bag_x
-            self.unmodified_bag_y = self.bag_y
-            self.unmodified_bag_z = self.bag_z
+        #     self.unmodified_bag_times = self.bag_times
+        #     self.unmodified_bag_x = self.bag_x
+        #     self.unmodified_bag_y = self.bag_y
+        #     self.unmodified_bag_z = self.bag_z
             self.bag_times = np.delete(self.bag_times, self.nonsensical)
             self.bag_x = np.delete(self.bag_x, self.nonsensical)
             self.bag_y = np.delete(self.bag_y, self.nonsensical)
             self.bag_z = np.delete(self.bag_z, self.nonsensical)
-            print(f"{len(self.nonsensical)} datapoints were ignored because because their timestamp didn't make sense. They go from index {self.nonsensical[0]} to {self.nonsensical[-1]}")
+            print(f"{len(self.nonsensical)} datapoints were ignored because because their timestamp wasn't in the good order (delayed message problem). They go from index {self.nonsensical[0]} to {self.nonsensical[-1]}")
 
 
 
@@ -255,11 +255,11 @@ class Plotter:
 
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
-        offset_list = self.find_temporal_offset() 
-        if len(offset_list) == 1:
-            offset_string = f"temporal offset : {offset_list[0]}s \n"
-        elif len(offset_list) ==2:
-            offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
+        # offset_list = self.find_temporal_offset() 
+        # if len(offset_list) == 1:
+        #     offset_string = f"temporal offset : {offset_list[0]}s \n"
+        # elif len(offset_list) ==2:
+        #     offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
         test_result="failed"
         passed, percentage = self.test_passed()
@@ -289,8 +289,10 @@ class Plotter:
         title_text_parameters = f'Parameters:\n'
         for key, value in self.params.items():
             title_text_parameters += f"    {key}: {value}\n"
-        title_text_results = f'Results: test {test_result}\n' + offset_string + f"acceptable deviation EPSILON: {self.EPSILON}[m]\n"
-        title_text_results += f"percentage of points > EPSILON : {percentage:.4f}%\n" + f'max error : '
+        title_text_results = f'Results: test {test_result}\n' + f"acceptable deviation EPSILON: {self.EPSILON}[m]\n"
+        title_text_results += f"percentage of points > EPSILON : {percentage:.4f}%\n" + f"average error : {np.mean(self.euclidian_dist):.6f} [m]\n"
+        title_text_results += f"median error : {np.median(self.euclidian_dist):.6f} [m]\n" + f"max error : {np.max(self.euclidian_dist):.6f} [m]\n"
+
 
         title_text = text + "\n" + title_text_settings + "\n" + title_text_parameters + "\n" + title_text_results
         fig = plt.figure(figsize=(5,8))
@@ -304,34 +306,19 @@ class Plotter:
         fig, ax = plt.subplots()
         ax.plot(self.bag_times, self.ideal_traj_x, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax.plot(self.bag_times, self.bag_x, label='Recorded trajectory')
-        ax.plot(self.bag_times, self.ideal_traj_no_x, label='nonoffset Ideal trajectory', linestyle=":", linewidth=1, zorder=10, color='c')
-        ax.axvline(x=self.takeoff_time, color="r")
-        ax.axvline(x=self.traj_start_time, color = "g")
-        ax.axvline(x=5.6, color="b", linestyle="--")
-        ax.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax.set_xlabel('time [s]')
         ax.set_ylabel('x position [m]')  
-        ax.set_title("Trajectory x")
-        
-        #####testing
-        for i in range(len(self.dot_list)):
-            ax.plot(self.dot_list[i], 0.25, 'ro')
-        
+        ax.set_title("Trajectory x")   
         ax.grid(which='major', color='#DDDDDD', linewidth=0.8)
         ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
         ax.minorticks_on()
         fig.tight_layout(pad = 4)
-        fig.legend()
-        
+        fig.legend()       
         pdf_pages.savefig(fig) 
           
         fig2, ax2 = plt.subplots()
         ax2.plot(self.bag_times, self.ideal_traj_y, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax2.plot(self.bag_times, self.bag_y, label='Recorded trajectory')
-        ax2.axvline(x=self.takeoff_time, color="r")
-        ax2.axvline(x=self.traj_start_time, color = "g")
-        ax2.axvline(x=5.6, color="b", linestyle="--")
-        ax2.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax2.set_xlabel('time [s]')
         ax2.set_ylabel('y position [m]')  
         ax2.set_title("trajectory y")
@@ -346,13 +333,6 @@ class Plotter:
         fig3, ax3 = plt.subplots()
         ax3.plot(self.bag_times, self.ideal_traj_z, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
         ax3.plot(self.bag_times, self.bag_z, label='Recorded trajectory')
-        # ax3.axvline(x=self.takeoff_time, color="r")
-        # ax3.axvline(x=self.traj_start_time, color = "g")
-        # ax3.axvline(x=5.6, color="b", linestyle="--")
-        # ax3.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
-        #####testing
-        # for i in range(len(self.dot_list)):
-            # ax3.plot(self.dot_list[i], 0.25, 'ro')
         ax3.set_xlabel('time [s]')
         ax3.set_ylabel('z position [m]')   
         ax3.set_title("Trajectory z")
@@ -365,10 +345,6 @@ class Plotter:
  
         fig4, ax4 = plt.subplots()
         ax4.plot(self.bag_times, self.euclidian_dist)
-        ax4.axvline(x=self.takeoff_time, color="r")
-        ax4.axvline(x=self.traj_start_time, color = "g")
-        ax4.axvline(x=5.6, color="b", linestyle="--")
-        ax4.axvline(x=0.6, color="b", linestyle="--", linewidth=1)
         ax4.set_xlabel('time [s]')
         ax4.set_ylabel('Euclidean distance [m]')
         ax4.set_title('Deviation between ideal and recorded trajectories')
@@ -405,73 +381,49 @@ class Plotter:
         plt.tight_layout(pad=4)
         pdf_pages.savefig(fig6)
 
+        #check if nonsensical timestamps were detected and deleted.     If yes, plot the original t, x, y and z arrays as line plot,
+        #then as scatter plot to visualize the problem
 
-        # bag_reduced = self.bag_times[:100]
-        # ideal_z_reduced = self.ideal_traj_z[:100]
-        # z_reduced = self.bag_z[:100]
-
-        # fig7, ax7 = plt.subplots()
-        # ax7.plot(bag_reduced, ideal_z_reduced, label='Ideal trajectory', linestyle="--", linewidth=1, zorder=10)
-        # ax7.plot(bag_reduced,z_reduced, label='Recorded trajectory', linewidth=0.1)
-
-        # for i in range(len(bag_reduced)):
-        #     # print(bag_reduced[i])
-        #     a = bag_reduced[i]
-        #     b=z_reduced[i]
-        #     ax7.plot(bag_reduced[i], z_reduced[i], 'ro')
-
-        # ax7.set_xlabel('time [s]')
-        # ax7.set_ylabel('z position [m]')   
-        # ax7.set_title("test z")
-        # ax7.grid(which='major', color='#DDDDDD', linewidth=0.8)
-        # ax7.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
-        # ax7.minorticks_on()
-        # fig7.tight_layout(pad = 4)
-        # fig7.legend()
-        # pdf_pages.savefig(fig7) 
-
-        #check if nonsensical timestamps were detected and deleted. If yes, plot the original t, x, y and z arrays to
-        #visualize the problem
-        if self.nonsensical:  
-            indexes = np.arange(len(self.unmodified_bag_times))
-            fig8,ax8 = plt.subplots()
-            ax8.plot(indexes, self.unmodified_bag_times, label='time', linestyle="--", linewidth=1, zorder=10)
-            ax8.plot(indexes, self.unmodified_bag_y, label='y', linestyle="--", linewidth=1, zorder=10)
-            ax8.plot(indexes, self.unmodified_bag_z, label='z', linestyle="--", linewidth=1, zorder=10)
-            ax8.set_xlabel('index')
-            ax8.set_ylabel('arrays t, x, y, z')
-            ax8.set_title('Visualization of unmodified t, x, y and z arrays')
-            fig8.tight_layout(pad=4)
-            ax8.grid(which='major', color='#DDDDDD', linewidth=0.8)
-            ax8.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.8)
-            ax8.minorticks_on()
-            #create rectangle to highlight where the error is
-            anchor = (self.nonsensical[0]-15, np.min(self.unmodified_bag_times)-0.5)
-            up_boundary= self.unmodified_bag_times[self.nonsensical[-1]] + 0.1
-            rect = Rectangle(anchor, width=len(self.nonsensical)+ 30, height=up_boundary, color='r', label="nonsensical", lw=0.1, fill=False)
-            # rect = Rectangle((-1,-1), 1000, 3, color="r", lw=0.5, fill=False)
-            ax8.add_patch(rect)
-            fig8.legend()
-            pdf_pages.savefig(fig8)
+        # if self.nonsensical:  
+        #     indexes = np.arange(len(self.unmodified_bag_times))
+        #     fig8,ax8 = plt.subplots()
+        #     ax8.plot(indexes, self.unmodified_bag_times, label='time', linestyle="--", linewidth=1, zorder=10)
+        #     ax8.plot(indexes, self.unmodified_bag_y, label='y', linestyle="--", linewidth=1, zorder=10)
+        #     ax8.plot(indexes, self.unmodified_bag_z, label='z', linestyle="--", linewidth=1, zorder=10)
+        #     ax8.set_xlabel('index')
+        #     ax8.set_ylabel('arrays t, x, y, z')
+        #     ax8.set_title('Visualization of unmodified t, x, y and z arrays')
+        #     fig8.tight_layout(pad=4)
+        #     ax8.grid(which='major', color='#DDDDDD', linewidth=0.8)
+        #     ax8.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.8)
+        #     ax8.minorticks_on()
+        #     #create rectangle to highlight where the error is
+        #     anchor = (self.nonsensical[0]-15, np.min(self.unmodified_bag_times)-0.5)
+        #     up_boundary= self.unmodified_bag_times[self.nonsensical[-1]] + 0.1
+        #     rect = Rectangle(anchor, width=len(self.nonsensical)+ 30, height=up_boundary, color='r', label="nonsensical", lw=0.1, fill=False)
+        #     # rect = Rectangle((-1,-1), 1000, 3, color="r", lw=0.5, fill=False)
+        #     ax8.add_patch(rect)
+        #     fig8.legend()
+        #     pdf_pages.savefig(fig8)
 
 
-            fig9,ax9 = plt.subplots()
-            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_x, c="r", s=0.1)
-            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_y, c="c", s=0.1)
-            # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_z, c="b", s=0.1)
-            ax9 = plt.scatter(self.bag_times, self.bag_x, c="g", s=0.01, marker='.')
-            ax9 = plt.scatter(self.bag_times, self.bag_y, c="c", s=0.01, marker='.')
-            ax9 = plt.scatter(self.bag_times, self.bag_z, c="b", s=0.01, marker='.')
+        #     fig9,ax9 = plt.subplots()
+        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_x, c="r", s=0.1)
+        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_y, c="c", s=0.1)
+        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_z, c="b", s=0.1)
+        #     ax9 = plt.scatter(self.bag_times, self.bag_x, c="g", s=0.01, marker='.')
+        #     ax9 = plt.scatter(self.bag_times, self.bag_y, c="c", s=0.01, marker='.')
+        #     ax9 = plt.scatter(self.bag_times, self.bag_z, c="b", s=0.01, marker='.')
 
-            ns_times = np.array(self.unmodified_bag_times[self.nonsensical])
-            ns_x = np.array(self.unmodified_bag_x[self.nonsensical])
-            ns_y = np.array(self.unmodified_bag_y[self.nonsensical])
-            ns_z = np.array(self.unmodified_bag_z[self.nonsensical])
-            print(f"len (ns_times) = {len(ns_times)}")
-            ax9 = plt.scatter(ns_times, ns_x, c="m", s=0.1, marker='v')
-            ax9 = plt.scatter(ns_times, ns_y, c="y", s=0.1, marker='<')
-            ax9 = plt.scatter(ns_times, ns_z, c="r", s=0.1, marker='^')
-            pdf_pages.savefig(fig9)
+        #     ns_times = np.array(self.unmodified_bag_times[self.nonsensical])
+        #     ns_x = np.array(self.unmodified_bag_x[self.nonsensical])
+        #     ns_y = np.array(self.unmodified_bag_y[self.nonsensical])
+        #     ns_z = np.array(self.unmodified_bag_z[self.nonsensical])
+        #     print(f"len (ns_times) = {len(ns_times)}")
+        #     ax9 = plt.scatter(ns_times, ns_x, c="m", s=0.1, marker='v')
+        #     ax9 = plt.scatter(ns_times, ns_y, c="y", s=0.1, marker='<')
+        #     ax9 = plt.scatter(ns_times, ns_z, c="r", s=0.1, marker='^')
+        #     pdf_pages.savefig(fig9)
 
 
 
@@ -495,26 +447,26 @@ class Plotter:
             print(f"Test {self.test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
             return (False, percentage)
         
-    def find_temporal_offset(self) -> list :
-        ''' Returns a list containing the on-graph temporal offset between real and ideal trajectory. If offset is different for x and y axis, returns both in the same list'''
-        peak_x = self.bag_x.argmax()  #find index of extremum value of real trajectory along x axis 
-        peak_time_x = self.bag_times[peak_x] #find corresponding time 
-        peak_x_ideal = self.ideal_traj_x.argmax() #find index of extremum value of ideal traj along x axis
-        peak_time_x_ideal = self.bag_times[peak_x_ideal] #find corresponding time
-        offset_x = peak_time_x_ideal - peak_time_x
+    # def find_temporal_offset(self) -> list :
+    #     ''' Returns a list containing the on-graph temporal offset between real and ideal trajectory. If offset is different for x and y axis, returns both in the same list'''
+    #     peak_x = self.bag_x.argmax()  #find index of extremum value of real trajectory along x axis 
+    #     peak_time_x = self.bag_times[peak_x] #find corresponding time 
+    #     peak_x_ideal = self.ideal_traj_x.argmax() #find index of extremum value of ideal traj along x axis
+    #     peak_time_x_ideal = self.bag_times[peak_x_ideal] #find corresponding time
+    #     offset_x = peak_time_x_ideal - peak_time_x
 
-        peak_y = self.bag_y.argmax()  #find index of extremum value of real trajectory along y ayis 
-        peak_time_y = self.bag_times[peak_y] #find corresponding time 
-        peak_y_ideal = self.ideal_traj_y.argmax() #find index of extremum value of ideal traj along y ayis
-        peak_time_y_ideal = self.bag_times[peak_y_ideal] #find corresponding time
-        offset_y = peak_time_y_ideal - peak_time_y
+    #     peak_y = self.bag_y.argmax()  #find index of extremum value of real trajectory along y ayis 
+    #     peak_time_y = self.bag_times[peak_y] #find corresponding time 
+    #     peak_y_ideal = self.ideal_traj_y.argmax() #find index of extremum value of ideal traj along y ayis
+    #     peak_time_y_ideal = self.bag_times[peak_y_ideal] #find corresponding time
+    #     offset_y = peak_time_y_ideal - peak_time_y
 
-        if offset_x == offset_y:
-            # print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
-            return [offset_x]
-        else : 
-            # print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
-            return [offset_x, offset_y]
+    #     if offset_x == offset_y:
+    #         # print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
+    #         return [offset_x]
+    #     else : 
+    #         # print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
+    #         return [offset_x, offset_y]
 
 
 if __name__=="__main__":
