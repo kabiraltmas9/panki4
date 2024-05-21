@@ -78,16 +78,15 @@ class Plotter:
         bag_arrays_size = len(self.bag_times)
         print("number of datapoints in self.bag_*: ",bag_arrays_size)
         
+
+        #since the rosbag doesn't start at a reliable time, we need to adjust the ideal time array and the real one so that they aren't offset. For this we compare the time where the "takeoff" command was
+        # given to the crazyflie with the time of takeoff in the desired trajectory. With this we have the time-delay which we need to correct the offset (NB : empirically modified by 0.15 seconds this 
+        #time-delay because that seems to be the delay between receiving the takeoff command and actually flying off)
         with open(rosbag_csvfile) as f:
                 lines = f.readlines()
-                second_to_lastline = lines[-2] #get 2nd to last line, where tajeoff time is written as comment
-                lastline = lines[-1] #get last line of csv file, where the traj start time is written as comment
-
-
-        self.traj_start_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
-        self.takeoff_time = float(second_to_lastline[second_to_lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
+                lastline = lines[-1] #get last line of csv file, where the takeoff time is written as comment
+                self.takeoff_time = float(lastline[lastline.find(":") + 1 :])  #get the "takeoff" time from last line of csv
         offset1 = (self.ideal_takeoff - self.takeoff_time) - 0.15
-
 
 
         #####calculate ideal trajectory points corresponding to the times of recorded points 
@@ -96,12 +95,7 @@ class Plotter:
         self.ideal_traj_y = np.empty([bag_arrays_size])
         self.ideal_traj_z = np.empty([bag_arrays_size])
         self.euclidian_dist = np.empty([bag_arrays_size])
-        #self.offset_times = self.bag_times - offset1 
 
-        # #for testing
-        # self.ideal_traj_no_x = np.empty([bag_arrays_size])
-        # self.ideal_traj_no_y = np.empty([bag_arrays_size])
-        # self.ideal_traj_no_z = np.empty([bag_arrays_size])
 
         no_match_in_idealcsv=[]
 
@@ -118,14 +112,11 @@ class Plotter:
                 if(self.bag_times[i] < 0):
                     self.dot_list.append(self.bag_times[i])
                 pos = self.ideal_traj_csv.eval(self.bag_times[i] + delay).pos
-                pos_no = self.ideal_traj_csv.eval(self.bag_times[i]).pos
             except AssertionError: 
                 no_match_in_idealcsv.append(i)
                 pos = [0,0,0]  #for all recorded datapoints who cannot be matched to a corresponding ideal position we assume the drone is on its ground start position (ie those datapoints are before takeoff or after landing)
-                pos_no = [0,0,0]
                
             self.ideal_traj_x[i], self.ideal_traj_y[i], self.ideal_traj_z[i]= pos[0], pos[1], pos[2]
-            # self.ideal_traj_no_x[i], self.ideal_traj_no_y[i], self.ideal_traj_no_z[i]= pos_no[0], pos_no[1], pos_no[2]
 
             self.euclidian_dist[i] = np.linalg.norm([self.ideal_traj_x[i]-self.bag_x[i], 
                                                 self.ideal_traj_y[i]-self.bag_y[i], self.ideal_traj_z[i]-self.bag_z[i]])
@@ -162,7 +153,7 @@ class Plotter:
 
 
     def adjust_arrays(self):
-        ''' Method that trims the self.bag_* attributes to get rid of the datapoints where the drone is immobile on the ground and makes self.bag_times start at 0 [s]'''
+        ''' Method that adjusts the self.bag_* attributes to get rid of the datapoints whose timestamp doesn't make sense. Also normalizes self.bag_times tostart at 0 [s]'''
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
 
@@ -181,10 +172,6 @@ class Plotter:
 
 
         if self.nonsensical: #if self.nonsensical is not empty
-        #     self.unmodified_bag_times = self.bag_times
-        #     self.unmodified_bag_x = self.bag_x
-        #     self.unmodified_bag_y = self.bag_y
-        #     self.unmodified_bag_z = self.bag_z
             self.bag_times = np.delete(self.bag_times, self.nonsensical)
             self.bag_x = np.delete(self.bag_x, self.nonsensical)
             self.bag_y = np.delete(self.bag_y, self.nonsensical)
@@ -192,8 +179,7 @@ class Plotter:
             print(f"{len(self.nonsensical)} datapoints were ignored because because their timestamp wasn't in the good order (delayed message problem). They go from index {self.nonsensical[0]} to {self.nonsensical[-1]}")
 
 
-
-
+        #NB the rest of this function is mostly useless now. I should delete it ?
         #find the takeoff time and landing times
         ground_level = self.bag_z[0]
         airborne = False
@@ -255,11 +241,6 @@ class Plotter:
 
 
         self.read_csv_and_set_arrays(ideal_csvfile,rosbag_csvfile)
-        # offset_list = self.find_temporal_offset() 
-        # if len(offset_list) == 1:
-        #     offset_string = f"temporal offset : {offset_list[0]}s \n"
-        # elif len(offset_list) ==2:
-        #     offset_string = f"averaged temporal offset : {(offset_list[0]+offset_list[1])/2}s \n"
         
         test_result="failed"
         passed, percentage = self.test_passed()
@@ -381,52 +362,6 @@ class Plotter:
         plt.tight_layout(pad=4)
         pdf_pages.savefig(fig6)
 
-        #check if nonsensical timestamps were detected and deleted.     If yes, plot the original t, x, y and z arrays as line plot,
-        #then as scatter plot to visualize the problem
-
-        # if self.nonsensical:  
-        #     indexes = np.arange(len(self.unmodified_bag_times))
-        #     fig8,ax8 = plt.subplots()
-        #     ax8.plot(indexes, self.unmodified_bag_times, label='time', linestyle="--", linewidth=1, zorder=10)
-        #     ax8.plot(indexes, self.unmodified_bag_y, label='y', linestyle="--", linewidth=1, zorder=10)
-        #     ax8.plot(indexes, self.unmodified_bag_z, label='z', linestyle="--", linewidth=1, zorder=10)
-        #     ax8.set_xlabel('index')
-        #     ax8.set_ylabel('arrays t, x, y, z')
-        #     ax8.set_title('Visualization of unmodified t, x, y and z arrays')
-        #     fig8.tight_layout(pad=4)
-        #     ax8.grid(which='major', color='#DDDDDD', linewidth=0.8)
-        #     ax8.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.8)
-        #     ax8.minorticks_on()
-        #     #create rectangle to highlight where the error is
-        #     anchor = (self.nonsensical[0]-15, np.min(self.unmodified_bag_times)-0.5)
-        #     up_boundary= self.unmodified_bag_times[self.nonsensical[-1]] + 0.1
-        #     rect = Rectangle(anchor, width=len(self.nonsensical)+ 30, height=up_boundary, color='r', label="nonsensical", lw=0.1, fill=False)
-        #     # rect = Rectangle((-1,-1), 1000, 3, color="r", lw=0.5, fill=False)
-        #     ax8.add_patch(rect)
-        #     fig8.legend()
-        #     pdf_pages.savefig(fig8)
-
-
-        #     fig9,ax9 = plt.subplots()
-        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_x, c="r", s=0.1)
-        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_y, c="c", s=0.1)
-        #     # ax9 = plt.scatter(self.unmodified_bag_times, self.unmodified_bag_z, c="b", s=0.1)
-        #     ax9 = plt.scatter(self.bag_times, self.bag_x, c="g", s=0.01, marker='.')
-        #     ax9 = plt.scatter(self.bag_times, self.bag_y, c="c", s=0.01, marker='.')
-        #     ax9 = plt.scatter(self.bag_times, self.bag_z, c="b", s=0.01, marker='.')
-
-        #     ns_times = np.array(self.unmodified_bag_times[self.nonsensical])
-        #     ns_x = np.array(self.unmodified_bag_x[self.nonsensical])
-        #     ns_y = np.array(self.unmodified_bag_y[self.nonsensical])
-        #     ns_z = np.array(self.unmodified_bag_z[self.nonsensical])
-        #     print(f"len (ns_times) = {len(ns_times)}")
-        #     ax9 = plt.scatter(ns_times, ns_x, c="m", s=0.1, marker='v')
-        #     ax9 = plt.scatter(ns_times, ns_y, c="y", s=0.1, marker='<')
-        #     ax9 = plt.scatter(ns_times, ns_z, c="r", s=0.1, marker='^')
-        #     pdf_pages.savefig(fig9)
-
-
-
         pdf_pages.close()
 
         print("Results saved in " + pdfname)
@@ -447,51 +382,23 @@ class Plotter:
             print(f"Test {self.test_name} failed : The deviation between ideal and recorded trajectories is greater than {self.EPSILON}m for {percentage:8.4f}% of  datapoints")
             return (False, percentage)
         
-    # def find_temporal_offset(self) -> list :
-    #     ''' Returns a list containing the on-graph temporal offset between real and ideal trajectory. If offset is different for x and y axis, returns both in the same list'''
-    #     peak_x = self.bag_x.argmax()  #find index of extremum value of real trajectory along x axis 
-    #     peak_time_x = self.bag_times[peak_x] #find corresponding time 
-    #     peak_x_ideal = self.ideal_traj_x.argmax() #find index of extremum value of ideal traj along x axis
-    #     peak_time_x_ideal = self.bag_times[peak_x_ideal] #find corresponding time
-    #     offset_x = peak_time_x_ideal - peak_time_x
-
-    #     peak_y = self.bag_y.argmax()  #find index of extremum value of real trajectory along y ayis 
-    #     peak_time_y = self.bag_times[peak_y] #find corresponding time 
-    #     peak_y_ideal = self.ideal_traj_y.argmax() #find index of extremum value of ideal traj along y ayis
-    #     peak_time_y_ideal = self.bag_times[peak_y_ideal] #find corresponding time
-    #     offset_y = peak_time_y_ideal - peak_time_y
-
-    #     if offset_x == offset_y:
-    #         # print(f"On-graph temporal offset is {offset_x}s, delay const is {self.DELAY_CONST_FIG8} so uncorrected/absolute offset is {offset_x-self.DELAY_CONST_FIG8}")
-    #         return [offset_x]
-    #     else : 
-    #         # print(f"On-graph temporal offsets are {offset_x} & {offset_y} secs, delay const is {self.DELAY_CONST_FIG8}")
-    #         return [offset_x, offset_y]
 
 
 if __name__=="__main__":
     
-    #command line utility 
+    # command line utility 
 
-    # from argparse import ArgumentParser, Namespace
-    # parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
-    # parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
-    # parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
-    # parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
-    # parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
-    # parser.add_argument("--overwrite", action="store_true", help="If the given pdf already exists, overwrites it without asking")
-    # args : Namespace = parser.parse_args()
+    from argparse import ArgumentParser, Namespace
+    parser = ArgumentParser(description="Creates a pdf plotting the recorded trajectory of a drone against its desired trajectory")
+    parser.add_argument("desired_trajectory", type=str, help=".csv file containing (time,x,y,z) of the ideal/desired drone trajectory")
+    parser.add_argument("recorded_trajectory", type=str, help=".csv file containing (time,x,y,z) of the recorded drone trajectory")
+    parser.add_argument("pdf", type=str, help="name of the pdf file you want to create/overwrite")
+    parser.add_argument("--open", help="Open the pdf directly after it is created", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="If the given pdf already exists, overwrites it without asking")
+    args : Namespace = parser.parse_args()
 
-    # plotter = Plotter()
-    # plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf, overwrite=args.overwrite)
-    # if args.open:
-    #     import subprocess
-    #     subprocess.call(["xdg-open", args.pdf])
-
-
-    paul = Plotter()
-    paul.create_figures("/home/julien/ros2_ws/src/crazyswarm2/systemtests/figure8_ideal_traj.csv", "/home/julien/ros2_ws/results/test_figure8/test_figure8_0.csv", "test1.pdf", overwrite=True)
-    import subprocess
-    subprocess.call(["xdg-open", "test1.pdf"])
-
-
+    plotter = Plotter()
+    plotter.create_figures(args.desired_trajectory, args.recorded_trajectory, args.pdf, overwrite=args.overwrite)
+    if args.open:
+        import subprocess
+        subprocess.call(["xdg-open", args.pdf])

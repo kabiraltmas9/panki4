@@ -155,7 +155,6 @@ class TestFlights(unittest.TestCase):
         writer.write_mcap_to_csv(inputbag, output_csv)  #translate bag from mcap to csv
         output_pdf = f"{str(self.ros2_ws)}/results/test_{testname}/results_{testname}.pdf"
         rosbag_csv = output_csv
-        traj_start = writer.trajectory_start_time
 
         plotter = Plotter(sim_backend=TestFlights.SIM)
         plotter.create_figures(self.test_file, rosbag_csv, output_pdf) #plot the data
