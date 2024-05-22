@@ -2,7 +2,7 @@ name: System Tests Simulation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, "feature-rosout" ]
   pull_request:
     branches: [ main ]
   # manual trigger
