@@ -47,28 +47,20 @@ class McapHandler:
                     if t_start_bag == None:
                         t_start_bag = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
                     t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) -t_start_bag
-                    # if t < 0:
-                    #     print(f"{i} : {msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9)} - {t_start_bag} = {t}")
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
                 if topic == "/rosout":  #and t_start_bag != None :
-                    # if msg.name == "crazyflie_server" and msg.function == "_start_trajectory_callback":
-                    #     abs_start = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
-                    #     t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) #- t_start_bag
-                    #     self.trajectory_start_time = t
-                    #     #print(f"trajectory started at t={t} and t_start_bag = {t_start_bag}")
-                    #     print(f"start trajectory at {self.trajectory_start_time}")
+                    if msg.name == "crazyflie_server" and msg.function == "takeoff":
+                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
+                        self.takeoff_time = t
+                    #the takeoff message in simulation has a sligthly different name than IRL, so we need this to record the sim takeoff time
+                    #BUT for some unknown reason the sim tests seem to work perfectly without even recording takeoff and adjusting the offset
+                    #so I will leave this commented here just in case the sim tests have to be worked on
                     # if msg.name == "crazyflie_server" and msg.function == "_takeoff_callback":
                     #     t = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
                     #     self.takeoff_time = t
                     #     print(f"takeoff at {self.takeoff_time}")
-                    if msg.name == "crazyflie_server" and msg.function == "start_trajectory":
-                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
-                        self.trajectory_start_time = t
-                    if msg.name == "crazyflie_server" and msg.function == "takeoff":
-                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
-                        self.takeoff_time = t
 
-            #write the trajectory start time as a comment on the last line
+            #write the "takeoff command" time as a comment on the last line
             writer.writerow([f"### takeoff time : {self.takeoff_time}"])
             f.close()
         except FileNotFoundError:

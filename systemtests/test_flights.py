@@ -11,7 +11,6 @@ import signal
 import atexit
 from argparse import ArgumentParser, Namespace
 
-#############################
 
 def setUpModule():
 

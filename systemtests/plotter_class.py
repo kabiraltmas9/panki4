@@ -28,8 +28,6 @@ class Plotter:
         self.ideal_takeoff = 0.6
         self.ideal_traj_start = 5.6
         self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
-        # self.DELAY_CONST_FIG8 = 0#1.3 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
-        # self.DELAY_CONST_MT = 0 #5.5
         # if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
         #     self.DELAY_CONST_FIG8 = 0#-0.45  #for an unknown reason, the delay constants with the sim_backend is different
         #     self.DELAY_CONST_MT = 0#-0.3
@@ -100,7 +98,6 @@ class Plotter:
         self.ideal_traj_z = np.empty([bag_arrays_size])
         self.euclidian_dist = np.empty([bag_arrays_size])
 
-
         no_match_in_idealcsv=[]
 
         delay = offset1
@@ -108,13 +105,9 @@ class Plotter:
         #     delay = self.DELAY_CONST_FIG8
         # elif self.test_name == "mt" and self.SIM:
         #     delay = self.DELAY_CONST_MT
-
-        self.dot_list = []########testing
         
         for i in range(bag_arrays_size):  
             try:
-                if(self.bag_times[i] < 0):
-                    self.dot_list.append(self.bag_times[i])
                 pos = self.ideal_traj_csv.eval(self.bag_times[i] + delay).pos
             except AssertionError: 
                 no_match_in_idealcsv.append(i)
@@ -162,7 +155,7 @@ class Plotter:
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
 
         #recurring problem : some messages recorded from /tf arrive way later (2-4 seconds) than when they were emitted, which makes a mess in the timestamps
-        #zB we have timestamps (in s) : 5.1, 5.2, 5.3, !!!3.7, 3.9, 4.5, 4.9!!!, 5.4, 5.5, 5.6, 5.7 etc. This bug almost always occurs in the first seconds of the recording, generally only happens once per recording
+        #zB we have timestamps (in s) : 5.1, 5.2, 5.3, !!!3.7, 3.9, 4.5, 4.9!!!, 5.4, 5.5, 5.6, 5.7 etc. This bug almost always occurs in the first seconds of the recording & generally only happens once per recording
         #and only concerns a very small percentage of datapoints (10-40 over about 1800 total), so it is not a big deal. We do not know if this bug stems from the Rosbag recording, from how /tf behaves or from the radio
 
         #Since we use a lineplot, we need to get rid of these datapoints that are in an order that doesn't make sense so that the plot can be readable
