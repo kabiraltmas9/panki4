@@ -154,6 +154,7 @@ class Plotter:
 
         print(f"rosbag initial length {(self.bag_times[-1]-self.bag_times[0]) }s")
 
+
         #recurring problem : some messages recorded from /tf arrive way later (2-4 seconds) than when they were emitted, which makes a mess in the timestamps
         #zB we have timestamps (in s) : 5.1, 5.2, 5.3, !!!3.7, 3.9, 4.5, 4.9!!!, 5.4, 5.5, 5.6, 5.7 etc. This bug almost always occurs in the first seconds of the recording & generally only happens once per recording
         #and only concerns a very small percentage of datapoints (10-40 over about 1800 total), so it is not a big deal. We do not know if this bug stems from the Rosbag recording, from how /tf behaves or from the radio
