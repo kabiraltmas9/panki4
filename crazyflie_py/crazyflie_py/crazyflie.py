@@ -141,7 +141,8 @@ class Crazyflie:
         self.status = {}
 
         # Query some settings
-        self.getParamsService = node.create_client(GetParameters, '/crazyflie_server/get_parameters')
+        self.getParamsService = node.create_client(
+            GetParameters, '/crazyflie_server/get_parameters')
         self.getParamsService.wait_for_service()
         req = GetParameters.Request()
         req.names = ['robots.{}.initial_position'.format(cfname), 'robots.{}.uri'.format(cfname)]
@@ -485,7 +486,8 @@ class Crazyflie:
     #     return np.array(position)
 
     def getParam(self, name):
-        """Returns the current value of the onboard named parameter.
+        """
+        Returns the current value of the onboard named parameter.
 
         Parameters are named values of various primitive C types that control
         the firmware's behavior. For more information, see
@@ -515,7 +517,6 @@ class Crazyflie:
         elif param_type == ParameterType.PARAMETER_DOUBLE:
             param_value = future.result().values[0].double_value
         return param_value
-
 
     def setParam(self, name, value):
         """
