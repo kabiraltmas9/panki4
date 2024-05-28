@@ -487,7 +487,7 @@ class Crazyflie:
 
     def getParam(self, name):
         """
-        Returns the current value of the onboard named parameter.
+        Get the current value of the onboard named parameter.
 
         Parameters are named values of various primitive C types that control
         the firmware's behavior. For more information, see
@@ -505,7 +505,6 @@ class Crazyflie:
         Returns:
             value (Any): The parameter's value.
         """
-
         param_name = self.prefix[1:] + '.params.' + name
         req = GetParameters.Request()
         req.names = [param_name]
