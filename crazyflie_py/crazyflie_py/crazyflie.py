@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+This module does contains the Crazyflie and Crazyflieserver classes.
+
+These classes are used for the Crazyflie_example scripts
+"""
 
 from collections import defaultdict
 
@@ -15,7 +20,7 @@ from collections import defaultdict
 
 
 from crazyflie_interfaces.msg import FullState, Position, Status, TrajectoryPolynomialPiece
-from crazyflie_interfaces.srv import GoTo, Land,\
+from crazyflie_interfaces.srv import GoTo, Land, \
     NotifySetpointsStop, StartTrajectory, Takeoff, UploadTrajectory
 from geometry_msgs.msg import Point
 import numpy as np
@@ -29,6 +34,15 @@ from std_srvs.srv import Empty
 
 
 def arrayToGeometryPoint(a):
+    """
+    Convert an array to a Geometry Point.
+
+    Args:
+        a (list): A list containing the x, y, and z coordinates.
+
+    Returns:
+        Point: A Geometry Point with the coordinates from the input array.
+    """
     result = Point()
     result.x = a[0]
     result.y = a[1]
@@ -53,6 +67,12 @@ class TimeHelper:
     """
 
     def __init__(self, node):
+        """
+        Construct TimeHelper.
+
+        Args:
+            node: ROS node reference.
+        """
         self.node = node
         # self.rosRate = None
         self.rateHz = None
@@ -114,7 +134,8 @@ class Crazyflie:
 
         # self.tf = tf
 
-        self.emergencyService = node.create_client(Empty, prefix + '/emergency')
+        self.emergencyService = node.create_client(
+            Empty, prefix + '/emergency')
         self.emergencyService.wait_for_service()
         self.takeoffService = node.create_client(Takeoff, prefix + '/takeoff')
         self.takeoffService.wait_for_service()
@@ -145,7 +166,8 @@ class Crazyflie:
             GetParameters, '/crazyflie_server/get_parameters')
         self.getParamsService.wait_for_service()
         req = GetParameters.Request()
-        req.names = ['robots.{}.initial_position'.format(cfname), 'robots.{}.uri'.format(cfname)]
+        req.names = ['robots.{}.initial_position'.format(
+            cfname), 'robots.{}.uri'.format(cfname)]
         future = self.getParamsService.call_async(req)
         while rclpy.ok():
             rclpy.spin_once(node)
@@ -153,11 +175,13 @@ class Crazyflie:
                 response = future.result()
                 # extract initial position
                 if response.values[0].type == ParameterType.PARAMETER_INTEGER_ARRAY:
-                    self.initialPosition = np.array(response.values[0].integer_array_value)
+                    self.initialPosition = np.array(
+                        response.values[0].integer_array_value)
                 elif response.values[0].type == ParameterType.PARAMETER_DOUBLE_ARRAY:
-                    self.initialPosition = np.array(response.values[0].double_array_value)
+                    self.initialPosition = np.array(
+                        response.values[0].double_array_value)
                 else:
-                    assert(False)
+                    assert (False)
 
                 # extract uri
                 self.uri = response.values[1].string_value
@@ -389,7 +413,8 @@ class Crazyflie:
         pieces = []
         for poly in trajectory.polynomials:
             piece = TrajectoryPolynomialPiece()
-            piece.duration = rclpy.duration.Duration(seconds=poly.duration).to_msg()
+            piece.duration = rclpy.duration.Duration(
+                seconds=poly.duration).to_msg()
             piece.poly_x = poly.px.p.tolist()
             piece.poly_y = poly.py.p.tolist()
             piece.poly_z = poly.pz.p.tolist()
@@ -531,9 +556,11 @@ class Crazyflie:
         param_name = self.prefix[1:] + '.params.' + name
         param_type = self.paramTypeDict[name]
         if param_type == ParameterType.PARAMETER_INTEGER:
-            param_value = ParameterValue(type=param_type, integer_value=int(value))
+            param_value = ParameterValue(
+                type=param_type, integer_value=int(value))
         elif param_type == ParameterType.PARAMETER_DOUBLE:
-            param_value = ParameterValue(type=param_type, double_value=float(value))
+            param_value = ParameterValue(
+                type=param_type, double_value=float(value))
         req = SetParameters.Request()
         req.parameters = [Parameter(name=param_name, value=param_value)]
         self.setParamsService.call_async(req)
@@ -773,7 +800,8 @@ class CrazyflieServer(rclpy.node.Node):
         self.landService.wait_for_service()
         self.goToService = self.create_client(GoTo, 'all/go_to')
         self.goToService.wait_for_service()
-        self.startTrajectoryService = self.create_client(StartTrajectory, 'all/start_trajectory')
+        self.startTrajectoryService = self.create_client(
+            StartTrajectory, 'all/start_trajectory')
         self.startTrajectoryService.wait_for_service()
         self.setParamsService = self.create_client(
             SetParameters, '/crazyflie_server/set_parameters')
@@ -793,7 +821,8 @@ class CrazyflieServer(rclpy.node.Node):
                     cfnames.append(cfname)
 
         # Query all parameters
-        listParamsService = self.create_client(ListParameters, '/crazyflie_server/list_parameters')
+        listParamsService = self.create_client(
+            ListParameters, '/crazyflie_server/list_parameters')
         listParamsService.wait_for_service()
         req = ListParameters.Request()
         req.depth = ListParameters.Request.DEPTH_RECURSIVE
@@ -971,16 +1000,20 @@ class CrazyflieServer(rclpy.node.Node):
             param_name = 'all.params.' + name
             param_type = self.paramTypeDict[name]
             if param_type == ParameterType.PARAMETER_INTEGER:
-                param_value = ParameterValue(type=param_type, integer_value=int(value))
+                param_value = ParameterValue(
+                    type=param_type, integer_value=int(value))
             elif param_type == ParameterType.PARAMETER_DOUBLE:
-                param_value = ParameterValue(type=param_type, double_value=float(value))
+                param_value = ParameterValue(
+                    type=param_type, double_value=float(value))
             req = SetParameters.Request()
             req.parameters = [Parameter(name=param_name, value=param_value)]
             self.setParamsService.call_async(req)
         except KeyError as e:
-            self.get_logger().warn(f'(crazyflie.py)setParam : keyError raised {e}')
+            self.get_logger().warn(
+                f'(crazyflie.py)setParam : keyError raised {e}')
         except Exception as e:
-            self.get_logger().warn(f'(crazyflie.py)setParam : exception raised {e}')
+            self.get_logger().warn(
+                f'(crazyflie.py)setParam : exception raised {e}')
 
     def cmdFullState(self, pos, vel, acc, yaw, omega):
         """
